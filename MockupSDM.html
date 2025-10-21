@@ -114,10 +114,10 @@
 <body class="bg-gray-50 font-sans antialiased">
 
     <!-- Main Application Container -->
-    <div class="flex h-screen overflow-hidden">
+    <div class="relative flex h-screen overflow-hidden">
         
         <!-- Sidebar (Kiri) -->
-        <aside class="sidebar w-64 flex-shrink-0 flex flex-col pt-4 pb-6 overflow-y-auto">
+        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-40 w-64 flex-shrink-0 flex flex-col pt-4 pb-6 overflow-y-auto transform -translate-x-full transition-transform duration-300 ease-in-out md:relative md:translate-x-0">
             
             <!-- Logo Area -->
             <div class="px-6 mb-8 flex items-center">
@@ -222,16 +222,24 @@
 
         </aside>
 
+        <!-- Sidebar overlay for mobile -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
         <!-- Main Content Area (Kanan) -->
-        <main class="flex-1 overflow-y-auto px-8 py-6">
+        <main class="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
             
             <!-- Header (Judul Halaman, Jam, dan Notifikasi) -->
             <header class="flex justify-between items-center mb-6" id="main-header">
-                <!-- Judul akan diisi oleh JS -->
-                <h1 class="text-3xl font-bold text-gray-800" id="page-title">Dashboard</h1>
-                <div class="flex items-center space-x-6">
-                    <!-- NEW: Real-time Clock -->
-                    <div id="live-clock" class="text-right">
+                <div class="flex items-center">
+                     <!-- Hamburger menu for mobile -->
+                    <button id="mobile-menu-btn" class="md:hidden mr-4 text-gray-600 focus:outline-none">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800" id="page-title">Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4 sm:space-x-6">
+                    <!-- Real-time Clock -->
+                    <div id="live-clock" class="text-right hidden sm:block">
                         <div class="font-semibold text-gray-700 text-lg" id="clock-time">09:55:00</div>
                         <div class="text-xs text-gray-500" id="clock-date">Rabu, 15 Oktober 2025</div>
                     </div>
@@ -274,9 +282,9 @@
         </div>
     </div>
     
-    <!-- Modal Tambah Izin (Tidak Berubah) -->
+    <!-- Modal Tambah Izin -->
     <div id="add-permission-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
-        <div class="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div class="relative mx-auto p-4 sm:p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <form id="add-permission-form">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Tambah Izin Manual</h3>
                 <div class="space-y-4">
@@ -295,7 +303,7 @@
                             <option>Izin Khusus</option>
                         </select>
                     </div>
-                     <!-- NEW: Attachment field for sick leave -->
+                     <!-- Attachment field for sick leave -->
                     <div id="attachment-field" style="display: none;">
                         <label for="permission-attachment" class="block text-sm font-medium text-gray-700">Lampirkan Surat Sakit (PDF/JPG/PNG)</label>
                         <input type="file" id="permission-attachment" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
@@ -327,9 +335,9 @@
         </div>
     </div>
     
-    <!-- Modal Tambah Lembur (Tidak Berubah) -->
+    <!-- Modal Tambah Lembur -->
     <div id="add-overtime-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
-        <div class="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div class="relative mx-auto p-4 sm:p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <form id="add-overtime-form">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Tambah Lembur Manual</h3>
                 <div class="space-y-4">
@@ -367,9 +375,9 @@
     </div>
 
 
-    <!-- Modal Detail Karyawan (Tidak Berubah) -->
+    <!-- Modal Detail Karyawan -->
     <div id="employee-detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
-        <div class="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="relative mx-auto p-4 sm:p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <div id="employee-detail-content">
                 <!-- Content will be populated by JS -->
             </div>
@@ -381,9 +389,9 @@
         </div>
     </div>
     
-    <!-- Modal Tambah/Edit Karyawan (Tidak Berubah) -->
+    <!-- Modal Tambah/Edit Karyawan -->
     <div id="employee-form-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
-        <div class="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="relative mx-auto p-4 sm:p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <form id="employee-form">
                   <h3 id="employee-form-title" class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Tambah Data Karyawan</h3>
                   <input type="hidden" id="employee-id">
@@ -459,7 +467,7 @@
 
     <!-- Modal Buat Surat (Diperbarui untuk Upload) -->
     <div id="add-letter-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
-        <div class="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
+        <div class="relative mx-auto p-4 sm:p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <form id="add-letter-form">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Ajukan Surat Baru (Upload)</h3>
                 <div class="space-y-4">
@@ -494,7 +502,7 @@
 
     <!-- Modal Detail Potongan -->
     <div id="deduction-detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 51;">
-        <div class="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="relative mx-auto p-4 sm:p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <h3 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Rincian Potongan</h3>
             <p id="deduction-employee-name" class="text-lg font-medium text-gray-700 mb-4"></p>
             <div id="deduction-list" class="space-y-3">
@@ -508,7 +516,7 @@
 
     <!-- Modal Tanda Tangan Digital (Canvas) -->
     <div id="signature-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 52;">
-        <div class="relative mx-auto p-6 border w-full max-w-xl shadow-lg rounded-md bg-white">
+        <div class="relative mx-auto p-4 sm:p-6 border w-full max-w-xl shadow-lg rounded-md bg-white">
             <h3 class="text-xl font-semibold text-gray-900 mb-2">Tanda Tangan Digital</h3>
             <p class="text-sm text-gray-500 mb-4">Gunakan mouse atau jari Anda untuk menggambar tanda tangan di area yang tersedia.</p>
             
@@ -528,9 +536,9 @@
         </div>
     </div>
 
-     <!-- NEW: Modal Detail Surat (Untuk Atasan) -->
+     <!-- Modal Detail Surat (Untuk Atasan) -->
     <div id="letter-detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 51;">
-        <div class="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="relative mx-auto p-4 sm:p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <h3 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-3" id="letter-detail-title">Detail Pengajuan Surat</h3>
             <div class="modal-body space-y-4" id="letter-detail-content">
                 <!-- Rincian surat akan diisi di sini -->
@@ -561,6 +569,10 @@
             let currentPage = 'dashboard';
             const contentContainer = document.getElementById('content-container');
             const pageTitle = document.getElementById('page-title');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+
 
             // --- Data Mockup (Sesuai Skema ERD dan Modul) ---
             const MOCK_DATA = {
@@ -1629,7 +1641,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                            <div class="p-4 bg-blue-50 rounded-lg border border-blue-200"><p class="text-sm text-gray-600">Total Karyawan</p><p class="text-2xl font-bold text-blue-800">${payrollData.length}</p></div>
                            <div class="p-4 bg-green-50 rounded-lg border border-green-200"><p class="text-sm text-gray-600">Total Gaji Pokok</p><p class="text-2xl font-bold text-green-800" id="total-pokok-card">${formatRupiah(payrollData.reduce((sum, item) => sum + item.baseSalary, 0))}</p></div>
                            <div class="p-4 bg-red-50 rounded-lg border border-red-200"><p class="text-sm text-gray-600">Total Potongan</p><p class="text-2xl font-bold text-red-800" id="total-potongan-card">${formatRupiah(payrollData.reduce((sum, item) => sum + item.deductions, 0))}</p></div>
@@ -2126,7 +2138,7 @@
                                 <i data-lucide="check-check" class="w-4 h-4 mr-2"></i> Tandai Semua Terbayar
                             </button>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                            <div class="p-4 bg-blue-50 rounded-lg border border-blue-200"><p class="text-sm text-gray-600">Total Karyawan Lembur</p><p class="text-2xl font-bold text-blue-800">${totalEmployees}</p></div>
                            <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200"><p class="text-sm text-gray-600">Total Biaya Lembur Bulan Ini</p><p class="text-2xl font-bold text-indigo-800">${formatRupiah(totalCost)}</p></div>
                         </div>
@@ -2514,6 +2526,29 @@
                     } else if (page && page !== currentPage) {
                         currentPage = page;
                         renderContent(currentPage);
+                    }
+                });
+            });
+
+            // Mobile sidebar toggle
+            function openSidebar() {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            }
+
+            function closeSidebar() {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+
+            mobileMenuBtn.addEventListener('click', openSidebar);
+            overlay.addEventListener('click', closeSidebar);
+
+             // Close sidebar when a navigation item is clicked on mobile
+            document.querySelectorAll('#sidebar .sidebar-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    if (window.innerWidth < 768) { // md breakpoint in Tailwind
+                        closeSidebar();
                     }
                 });
             });
