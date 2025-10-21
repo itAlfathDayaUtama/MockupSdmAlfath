@@ -1,0 +1,2530 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard SI SDM - Terintegrasi</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons for high-quality icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Load Chart.js for visualization (only used in Dashboard) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* Custom styles for the sleek dark sidebar */
+        .sidebar {
+            background-color: #3730a3; /* Indigo-800 equivalent */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            color: #d1d5db; /* Gray-300 */
+            transition: all 0.2s;
+            border-radius: 0.5rem;
+            margin: 0.25rem 0.75rem;
+        }
+        .sidebar-item:hover {
+            background-color: #4338ca; /* Indigo-700 */
+            color: #eef2ff; /* Indigo-50 */
+        }
+        .sidebar-item.active {
+            background-color: #f1f5f9; /* Slate-100 */
+            color: #3730a3; /* Indigo-800 */
+            font-weight: 600;
+        }
+        .sidebar-item.active .icon {
+            color: #3730a3; /* Indigo-800 */
+        }
+        .profile-container {
+            border-top: 1px solid #4338ca;
+            padding-top: 1.5rem;
+            margin-top: 1rem;
+        }
+        /* Style for content transition */
+        #content-container {
+            transition: opacity 0.3s ease-in-out;
+        }
+        /* Custom style for payroll input */
+        .deduction-input {
+            -moz-appearance: textfield; /* Firefox */
+        }
+        .deduction-input::-webkit-outer-spin-button,
+        .deduction-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Tooltip style */
+        .tooltip-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #334155; /* slate-700 */
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .submenu {
+            padding-left: 2.5rem; /* Indent sub-menu items */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .submenu.open {
+            max-height: 500px; /* Adjust as needed */
+        }
+        .sidebar-item .chevron-icon {
+            margin-left: auto;
+            transition: transform 0.3s;
+        }
+        #surat-menu-toggle.active .chevron-icon {
+            transform: rotate(90deg);
+        }
+        /* NEW: Canvas styles */
+        #signature-canvas {
+            border: 2px dashed #cbd5e1; /* slate-300 */
+            border-radius: 0.5rem;
+            cursor: crosshair;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+
+    <!-- Main Application Container -->
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Sidebar (Kiri) -->
+        <aside class="sidebar w-64 flex-shrink-0 flex flex-col pt-4 pb-6 overflow-y-auto">
+            
+            <!-- Logo Area -->
+            <div class="px-6 mb-8 flex items-center">
+                <span class="text-xl font-bold text-white tracking-wider">HRIS ADMIN</span>
+            </div>
+
+            <!-- Profile Info -->
+            <div class="px-6 mb-6">
+                <div class="flex items-center space-x-3">
+                    <img class="h-10 w-10 rounded-full object-cover" src="https://placehold.co/40x40/7c3aed/ffffff?text=M" alt="Profile">
+                    <div>
+                        <div class="text-sm font-semibold text-white">Maria</div>
+                        <div class="text-xs text-indigo-200">HR Manager</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-grow space-y-1" id="sidebar-nav">
+                <!-- Modul 1: Dashboard -->
+                <a href="#" class="sidebar-item active" data-page="dashboard">
+                    <i data-lucide="layout-dashboard" class="icon w-5 h-5 mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                <!-- Modul 2: Manajemen Karyawan (CRUD, Sertifikat) -->
+                <a href="#" class="sidebar-item" data-page="karyawan">
+                    <i data-lucide="users-2" class="icon w-5 h-5 mr-3"></i>
+                    <span>Karyawan</span>
+                </a>
+                <!-- Modul 3: Manajemen Jabatan & Akses -->
+                <a href="#" class="sidebar-item" data-page="jabatan">
+                    <i data-lucide="briefcase" class="icon w-5 h-5 mr-3"></i>
+                    <span>Jabatan & Akses</span>
+                </a>
+                <!-- Modul 4: Absensi -->
+                <a href="#" class="sidebar-item" data-page="absensi">
+                    <i data-lucide="clipboard-check" class="icon w-5 h-5 mr-3"></i>
+                    <span>Absensi</span>
+                </a>
+                <!-- Modul 5: Perizinan (Multi-level approval) -->
+                <a href="#" class="sidebar-item" data-page="perizinan">
+                    <i data-lucide="book-open-text" class="icon w-5 h-5 mr-3"></i>
+                    <span>Perizinan</span>
+                </a>
+                <!-- Modul 6: Lembur (Persetujuan atasan) -->
+                <a href="#" class="sidebar-item" data-page="lembur">
+                    <i data-lucide="clock-4" class="icon w-5 h-5 mr-3"></i>
+                    <span>Pembayaran Lembur</span>
+                </a>
+                <!-- Modul 7: Penggajian (Hitung gaji otomatis) -->
+                <a href="#" class="sidebar-item" data-page="penggajian">
+                    <i data-lucide="dollar-sign" class="icon w-5 h-5 mr-3"></i>
+                    <span>Penggajian</span>
+                </a>
+                <!-- Modul 8: Persuratan (Submenu diperbarui) -->
+                <div>
+                    <div class="sidebar-item" id="surat-menu-toggle">
+                        <i data-lucide="mail" class="icon w-5 h-5 mr-3"></i>
+                        <span>Persuratan</span>
+                        <i data-lucide="chevron-right" class="chevron-icon w-4 h-4"></i>
+                    </div>
+                    <div class="submenu" id="surat-submenu">
+                         <!-- Admin Action (Pending Submissions) -->
+                         <a href="#" class="sidebar-item text-xs" data-page="surat_admin">
+                            <i data-lucide="file-plus" class="icon w-4 h-4 mr-3"></i>
+                            <span>Pengajuan Surat (Admin)</span>
+                        </a>
+                         <!-- Admin History (Approved/Denied Submissions) -->
+                         <a href="#" class="sidebar-item text-xs" data-page="surat_admin_history">
+                            <i data-lucide="history" class="icon w-4 h-4 mr-3"></i>
+                            <span>Histori Pengiriman (Admin)</span>
+                        </a>
+                        <!-- Approver Action (Pending Inbox) -->
+                        <a href="#" class="sidebar-item text-xs" data-page="surat_atasan">
+                            <i data-lucide="inbox" class="icon w-4 h-4 mr-3"></i>
+                            <span>Surat Masuk (Atasan)</span>
+                        </a>
+                        <!-- Approver History (Approved/Denied Inbox) -->
+                        <a href="#" class="sidebar-item text-xs" data-page="surat_atasan_history">
+                            <i data-lucide="list-checks" class="icon w-4 h-4 mr-3"></i>
+                            <span>Histori Persetujuan (Atasan)</span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Bottom Settings/Profile -->
+            <div class="profile-container flex flex-col">
+                <a href="#" class="sidebar-item" data-page="profile">
+                    <i data-lucide="user" class="icon w-5 h-5 mr-3"></i>
+                    <span>Profil Saya</span>
+                </a>
+                <a href="#" class="sidebar-item" data-page="settings">
+                    <i data-lucide="settings" class="icon w-5 h-5 mr-3"></i>
+                    <span>Pengaturan</span>
+                </a>
+                <a href="#" class="sidebar-item" data-page="logout">
+                    <i data-lucide="log-out" class="icon w-5 h-5 mr-3"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+
+        </aside>
+
+        <!-- Main Content Area (Kanan) -->
+        <main class="flex-1 overflow-y-auto px-8 py-6">
+            
+            <!-- Header (Judul Halaman, Jam, dan Notifikasi) -->
+            <header class="flex justify-between items-center mb-6" id="main-header">
+                <!-- Judul akan diisi oleh JS -->
+                <h1 class="text-3xl font-bold text-gray-800" id="page-title">Dashboard</h1>
+                <div class="flex items-center space-x-6">
+                    <!-- NEW: Real-time Clock -->
+                    <div id="live-clock" class="text-right">
+                        <div class="font-semibold text-gray-700 text-lg" id="clock-time">09:55:00</div>
+                        <div class="text-xs text-gray-500" id="clock-date">Rabu, 15 Oktober 2025</div>
+                    </div>
+                    <!-- Notifikasi Real-time -->
+                    <button class="text-gray-500 hover:text-indigo-600 relative" aria-label="Notifikasi">
+                        <i data-lucide="bell" class="w-6 h-6"></i>
+                        <span class="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-red-500"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Container -->
+            <div id="content-container">
+                <!-- Konten halaman akan dirender di sini oleh JS -->
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal Konfirmasi -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
+        <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                    <i data-lucide="alert-triangle" class="h-6 w-6 text-yellow-600"></i>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Konfirmasi Tindakan</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500" id="modal-message">Apakah Anda yakin?</p>
+                </div>
+                <div class="items-center px-4 py-3 space-x-2">
+                    <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">
+                        Batal
+                    </button>
+                    <button id="modal-confirm-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold">
+                        Ya, Lanjutkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Tambah Izin (Tidak Berubah) -->
+    <div id="add-permission-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
+        <div class="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <form id="add-permission-form">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Tambah Izin Manual</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="employee-select-permission" class="block text-sm font-medium text-gray-700">Karyawan</label>
+                        <select id="employee-select-permission" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="permission-type" class="block text-sm font-medium text-gray-700">Jenis Izin</label>
+                        <select id="permission-type" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option>Cuti Tahunan</option>
+                            <option>Izin Sakit</option>
+                            <option>Cuti Melahirkan</option>
+                            <option>Izin Khusus</option>
+                        </select>
+                    </div>
+                     <!-- NEW: Attachment field for sick leave -->
+                    <div id="attachment-field" style="display: none;">
+                        <label for="permission-attachment" class="block text-sm font-medium text-gray-700">Lampirkan Surat Sakit (PDF/JPG/PNG)</label>
+                        <input type="file" id="permission-attachment" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700">Dari Tanggal</label>
+                            <input type="date" id="start-date" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
+                            <input type="date" id="end-date" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="permission-notes" class="block text-sm font-medium text-gray-700">Keterangan (Opsional)</label>
+                        <textarea id="permission-notes" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-2">
+                    <button type="button" id="modal-permission-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-semibold">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Tambah Lembur (Tidak Berubah) -->
+    <div id="add-overtime-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
+        <div class="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <form id="add-overtime-form">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Tambah Lembur Manual</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="employee-select-overtime" class="block text-sm font-medium text-gray-700">Karyawan</label>
+                        <select id="employee-select-overtime" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                           <!-- Options populated by JS -->
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="overtime-date" class="block text-sm font-medium text-gray-700">Tanggal Lembur</label>
+                            <input type="date" id="overtime-date" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                             <label for="overtime-hours" class="block text-sm font-medium text-gray-700">Jumlah Jam</label>
+                            <input type="number" id="overtime-hours" min="1" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="overtime-notes" class="block text-sm font-medium text-gray-700">Keterangan (Opsional)</label>
+                        <textarea id="overtime-notes" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-2">
+                    <button type="button" id="modal-overtime-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-semibold">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Modal Detail Karyawan (Tidak Berubah) -->
+    <div id="employee-detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
+        <div class="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div id="employee-detail-content">
+                <!-- Content will be populated by JS -->
+            </div>
+             <div class="mt-6 flex justify-end">
+                <button id="modal-detail-close-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Tambah/Edit Karyawan (Tidak Berubah) -->
+    <div id="employee-form-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
+        <div class="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <form id="employee-form">
+                  <h3 id="employee-form-title" class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Tambah Data Karyawan</h3>
+                  <input type="hidden" id="employee-id">
+                  <div class="modal-body space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label for="employee-name" class="block text-sm font-medium text-gray-700">Nama Lengkap</label><input type="text" id="employee-name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                            <div><label for="employee-nik" class="block text-sm font-medium text-gray-700">NIK</label><input type="text" id="employee-nik" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                            <div><label for="employee-email" class="block text-sm font-medium text-gray-700">Email</label><input type="email" id="employee-email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                            <div><label for="employee-phone" class="block text-sm font-medium text-gray-700">No. HP</label><input type="tel" id="employee-phone" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                            <div><label for="employee-birthPlace" class="block text-sm font-medium text-gray-700">Tempat Lahir</label><input type="text" id="employee-birthPlace" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                            <div><label for="employee-birthDate" class="block text-sm font-medium text-gray-700">Tanggal Lahir</label><input type="date" id="employee-birthDate" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                            <div><label for="employee-position" class="block text-sm font-medium text-gray-700">Jabatan</label><select id="employee-position" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></select></div>
+                            <div><label for="employee-workArea" class="block text-sm font-medium text-gray-700">Wilayah Kerja</label><input type="text" id="employee-workArea" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                            <div><label for="employee-joinDate" class="block text-sm font-medium text-gray-700">Tanggal Awal Bekerja</label><input type="date" id="employee-joinDate" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                            <div><label for="employee-endDate" class="block text-sm font-medium text-gray-700">Tanggal Akhir Bekerja</label><input type="date" id="employee-endDate" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Status</label>
+                                <div class="mt-2 space-x-4">
+                                    <label class="inline-flex items-center"><input type="radio" name="employee-status" value="true" class="form-radio" checked> <span class="ml-2">Aktif</span></label>
+                                    <label class="inline-flex items-center"><input type="radio" name="employee-status" value="false" class="form-radio"> <span class="ml-2">Non-Aktif</span></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700">Berkas Pendukung & Sertifikat</label>
+                            <div class="mt-2 p-4 border border-gray-200 rounded-md">
+                                <ul id="document-list-form" class="space-y-2 text-sm">
+                                    <!-- File list will be populated here -->
+                                </ul>
+                                <button type="button" id="add-document-form-btn" class="mt-2 text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-2 py-1 rounded-md flex items-center">
+                                    <i data-lucide="plus" class="w-3 h-3 mr-1"></i> Tambah Berkas
+                                </button>
+                                <input type="file" id="document-form-upload-input" class="hidden" accept=".pdf" multiple>
+                            </div>
+                        </div>
+                   </div>
+                  <div class="mt-6 flex justify-end space-x-2">
+                        <button type="button" id="modal-employee-form-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-semibold">Simpan</button>
+                   </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Hapus Karyawan (Tidak Berubah) -->
+    <div id="delete-employee-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
+        <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <i data-lucide="trash-2" class="h-6 w-6 text-red-600"></i>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Hapus Karyawan</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500" id="delete-modal-message">
+                        Anda akan menghapus data karyawan secara permanen. Tindakan ini tidak dapat diurungkan.
+                    </p>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Untuk konfirmasi, ketik "<strong class="text-red-600">Hapus Data Karyawan</strong>" di bawah ini.
+                    </p>
+                    <input type="text" id="delete-confirmation-input" class="mt-4 w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="items-center px-4 py-3 space-x-2">
+                    <button id="modal-delete-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">
+                        Batal
+                    </button>
+                    <button id="modal-delete-confirm-btn" class="px-4 py-2 bg-red-600 text-white rounded-md font-semibold opacity-50 cursor-not-allowed" disabled>
+                        Hapus Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Buat Surat (Diperbarui untuk Upload) -->
+    <div id="add-letter-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 50;">
+        <div class="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <form id="add-letter-form">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Ajukan Surat Baru (Upload)</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="letter-recipient" class="block text-sm font-medium text-gray-700">Tujuan (Atasan/Pihak)</label>
+                        <select id="letter-recipient" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                             <option value="Siti Rahmawati">Siti Rahmawati (HR Manager)</option>
+                             <option value="CEO">CEO</option>
+                             <option value="Finance">Finance</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="letter-subject" class="block text-sm font-medium text-gray-700">Perihal</label>
+                        <input type="text" id="letter-subject" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="letter-file" class="block text-sm font-medium text-gray-700">Pilih Berkas Surat (PDF/DOC/Gambar)</label>
+                        <input type="file" id="letter-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                    <div>
+                        <label for="letter-notes" class="block text-sm font-medium text-gray-700">Catatan/Ringkasan (Opsional)</label>
+                        <textarea id="letter-notes" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ringkasan atau catatan untuk surat ini..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-2">
+                    <button type="button" id="modal-letter-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-semibold">Kirim Pengajuan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detail Potongan -->
+    <div id="deduction-detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 51;">
+        <div class="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-2">Rincian Potongan</h3>
+            <p id="deduction-employee-name" class="text-lg font-medium text-gray-700 mb-4"></p>
+            <div id="deduction-list" class="space-y-3">
+                <!-- Rincian akan diisi di sini -->
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="modal-deduction-close-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tanda Tangan Digital (Canvas) -->
+    <div id="signature-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 52;">
+        <div class="relative mx-auto p-6 border w-full max-w-xl shadow-lg rounded-md bg-white">
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Tanda Tangan Digital</h3>
+            <p class="text-sm text-gray-500 mb-4">Gunakan mouse atau jari Anda untuk menggambar tanda tangan di area yang tersedia.</p>
+            
+            <canvas id="signature-canvas" width="550" height="250"></canvas>
+            
+            <div class="mt-6 flex justify-between items-center">
+                <button type="button" id="signature-clear-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold flex items-center">
+                    <i data-lucide="eraser" class="w-4 h-4 mr-2"></i> Bersihkan
+                </button>
+                <div class="space-x-2">
+                    <button type="button" id="signature-cancel-btn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 font-semibold">Batal</button>
+                    <button type="button" id="signature-save-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold flex items-center">
+                        <i data-lucide="save" class="w-4 h-4 mr-2"></i> Simpan & Setujui
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- NEW: Modal Detail Surat (Untuk Atasan) -->
+    <div id="letter-detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" style="display: none; z-index: 51;">
+        <div class="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4 border-b pb-3" id="letter-detail-title">Detail Pengajuan Surat</h3>
+            <div class="modal-body space-y-4" id="letter-detail-content">
+                <!-- Rincian surat akan diisi di sini -->
+            </div>
+            <div class="mt-4">
+                <label for="approver-notes" class="block text-sm font-medium text-gray-700">Catatan Persetujuan/Penolakan</label>
+                <textarea id="approver-notes" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Berikan catatan Anda di sini..."></textarea>
+            </div>
+            <div class="mt-6 flex justify-between items-center">
+                <button type="button" id="modal-letter-detail-close-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 font-semibold">Tutup</button>
+                <div class="space-x-2">
+                    <button type="button" id="modal-letter-deny-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-semibold flex items-center">
+                        <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i> Tolak
+                    </button>
+                    <button type="button" id="modal-letter-approve-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold flex items-center">
+                        <i data-lucide="pen-square" class="w-4 h-4 mr-2"></i> Tanda Tangan & Setujui
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JavaScript for SPA Logic, Charts, and Icon Rendering -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Global State & Elements ---
+            let currentPage = 'dashboard';
+            const contentContainer = document.getElementById('content-container');
+            const pageTitle = document.getElementById('page-title');
+
+            // --- Data Mockup (Sesuai Skema ERD dan Modul) ---
+            const MOCK_DATA = {
+                employees: [
+                    { id: 1, nik: 'K001', name: 'Budi Santoso', email: 'budi.s@example.com', positionId: 2, active: true, joinDate: '2022-01-15', birthPlace: 'Jakarta', birthDate: '1995-08-17', phone: '081234567890', workArea: 'Kantor Pusat', endDate: null, certificates: [{name: 'Sertifikat Keahlian Jaringan', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}, {name: 'Sertifikat Database Oracle', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}], documents: [{name: 'CV_Budi_Santoso.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}, {name: 'KTP_Budi_Santoso.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}] },
+                    { id: 2, nik: 'K002', name: 'Siti Rahmawati', email: 'siti.r@example.com', positionId: 1, active: true, joinDate: '2019-11-01', birthPlace: 'Bandung', birthDate: '1990-05-20', phone: '081298765432', workArea: 'Kantor Pusat', endDate: null, certificates: [{name: 'Certified Human Resource Manager', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}], documents: [{name: 'CV_Siti_Rahmawati.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}] },
+                    { id: 3, nik: 'K003', name: 'Joko Susilo', email: 'joko.s@example.com', positionId: 3, active: false, joinDate: '2020-05-20', birthPlace: 'Surabaya', birthDate: '1992-02-10', phone: '085611223344', workArea: 'Cabang Surabaya', endDate: '2024-09-30', certificates: [], documents: [] },
+                    { id: 4, nik: 'K004', name: 'Dewi Lestari', email: 'dewi.l@example.com', positionId: 2, active: true, joinDate: '2023-03-10', birthPlace: 'Medan', birthDate: '1998-11-25', phone: '087755667788', workArea: 'Kantor Pusat', endDate: null, certificates: [{name: 'Sertifikat Pemrograman Python', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}], documents: [{name: 'CV_Dewi_Lestari.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}] },
+                    { id: 5, nik: 'K005', name: 'Agus Wijaya', email: 'agus.w@example.com', positionId: 5, active: true, joinDate: '2021-08-25', birthPlace: 'Yogyakarta', birthDate: '1994-07-12', phone: '089912341234', workArea: 'Kantor Pusat', endDate: null, certificates: [{name: 'Brevet Pajak A & B', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}], documents: [{name: 'CV_Agus_Wijaya.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'}] },
+                ],
+                positions: [
+                    { id: 1, name: 'HR Manager', level: 4, access: ['karyawan_r', 'absensi_crud', 'perizinan_approve'] },
+                    { id: 2, name: 'IT Staff', level: 1, access: ['absensi_c', 'perizinan_c'] },
+                    { id: 3, name: 'Senior Marketing', level: 3, access: ['perizinan_approve_level_1'] },
+                    { id: 4, name: 'CEO', level: 5, access: ['all_access', 'gaji_run'] },
+                    { id: 5, name: 'Finance', level: 2, access: ['gaji_run'] }
+                ],
+                permissions: [
+                    { id: 101, employeeId: 1, type: 'Cuti Tahunan', startDate: '2025-11-01', endDate: '2025-11-03', status: 'Pending', approver: 'Siti Rahmawati', leaveId: 101, approverNotes: null, attachmentName: null, attachmentUrl: null },
+                    { id: 102, employeeId: 2, type: 'Izin Sakit', startDate: '2025-10-12', endDate: '2025-10-12', status: 'Approved', approver: 'Maria (Manual)', leaveId: null, approverNotes: null, attachmentName: 'surat_sakit_siti.pdf', attachmentUrl: '#' },
+                    { id: 103, employeeId: 4, type: 'Cuti Melahirkan', startDate: '2025-10-15', endDate: '2025-12-15', status: 'Pending', approver: 'Siti Rahmawati', leaveId: 103, approverNotes: null, attachmentName: null, attachmentUrl: null },
+                    { id: 104, employeeId: 5, type: 'Izin Sakit', startDate: '2025-10-20', endDate: '2025-10-27', status: 'Pending', approver: 'Siti Rahmawati', leaveId: 104, approverNotes: null, attachmentName: 'surat_sakit_agus_opname.pdf', attachmentUrl: '#' }
+                ],
+                overtime: [
+                    { id: 201, employeeId: 1, date: '2025-10-13', hours: 2, status: 'Approved', startTime: '17:00', endTime: '19:00', paymentStatus: 'Pending' },
+                    { id: 204, employeeId: 1, date: '2025-10-14', hours: 3, status: 'Approved', startTime: '19:00', endTime: '22:00', paymentStatus: 'Pending' },
+                    { id: 202, employeeId: 4, date: '2025-10-15', hours: 3, status: 'Approved', startTime: '17:30', endTime: '20:30', paymentStatus: 'Pending' },
+                    { id: 203, employeeId: 5, date: '2025-10-16', hours: 2, status: 'Approved', startTime: '20:00', endTime: '22:00', paymentStatus: 'Pending' },
+                    { id: 205, employeeId: 5, date: '2025-10-17', hours: 4, status: 'Approved', startTime: '19:00', endTime: '23:00', paymentStatus: 'Pending' },
+                    { id: 206, employeeId: 2, date: '2025-09-20', hours: 2, status: 'Approved', startTime: '17:00', endTime: '19:00', paymentStatus: 'Paid' },
+                ],
+                payroll: [
+                    { period: 'Okt 2025', status: 'Pending', runDate: '-', totalPaid: '-' },
+                    { period: 'Sep 2025', status: 'Completed', runDate: '2025-09-25', totalPaid: 'Rp 1.1 M' },
+                ],
+                attendance: [
+                    { id: 1, employeeId: 1, date: '2025-10-13', checkIn: '08:00', checkOut: '17:00', status: 'Tepat Waktu', shift: 'Pagi (08:00 - 17:00)', verificationStatus: 'Pending' },
+                    { id: 2, employeeId: 2, date: '2025-10-13', checkIn: '08:15', checkOut: '17:00', status: 'Terlambat', shift: 'Pagi (08:00 - 17:00)', verificationStatus: 'Pending' },
+                    { id: 3, employeeId: 3, date: '2025-10-13', checkIn: 'N/A', checkOut: 'N/A', status: 'Tidak Hadir', shift: 'N/A', verificationStatus: 'Approved' },
+                    { id: 4, employeeId: 4, date: '2025-10-13', checkIn: '07:55', checkOut: '17:02', status: 'Tepat Waktu', shift: 'Pagi (08:00 - 17:00)', verificationStatus: 'Pending' },
+                ],
+                monthlyAttendance: [
+                    { employeeId: 1, status: 'Terlambat' }, { employeeId: 1, status: 'Tidak Hadir' },
+                    { employeeId: 4, status: 'Terlambat' }, { employeeId: 4, status: 'Terlambat' },
+                    { employeeId: 5, status: 'Izin' }
+                ],
+                baseSalaries: [
+                    { employeeId: 1, salary: 8000000 },
+                    { employeeId: 2, salary: 12000000 },
+                    { employeeId: 4, salary: 8000000 },
+                    { employeeId: 5, salary: 9500000 },
+                ],
+                cooperativeLoans: [
+                    { employeeId: 1, deductionAmount: 500000, loanId: 'LN001' },
+                    { employeeId: 5, deductionAmount: 750000, loanId: 'LN002' }
+                ],
+                payrollRunDetails: [],
+                lemburRunDetails: [],
+                letters: [
+                    { id: 301, to: 'Siti Rahmawati', subject: 'Penugasan Proyek Integrasi Sistem', date: '2025-10-14', status: 'Pending', content: 'Mohon untuk menugaskan Budi Santoso...', sender: 'Maria (HR Manager)', fileName: 'Surat_Tugas_Integrasi.pdf', fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', signature: null, approverNotes: null, leaveId: null },
+                    { id: 302, to: 'CEO', subject: 'Permintaan Pembelian Server Baru', date: '2025-10-12', status: 'Approved & Signed', content: 'Dengan ini kami mengajukan permintaan...', sender: 'Budi Santoso (IT Staff)', fileName: 'Permintaan_Server_IT.pdf', fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', signature: 'dummy_signature_url', approverNotes: 'Segera proses.', leaveId: null },
+                    { id: 303, to: 'Siti Rahmawati', subject: 'Laporan Kinerja Tim Marketing Q3', date: '2025-10-11', status: 'Denied', content: 'Laporan kinerja Q3 ditolak karena...', sender: 'Joko Susilo (Senior Marketing)', fileName: 'Laporan_Q3_Marketing.pdf', fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', signature: null, approverNotes: 'Data tidak akurat, harap direvisi kembali.', leaveId: null },
+                    { id: 304, to: 'Finance', subject: 'Permintaan Data Penggajian Triwulan', date: '2025-10-15', status: 'Pending', content: 'Mohon disediakan data rincian penggajian...', sender: 'Maria (HR Manager)', fileName: 'Data_Gaji_Triwulan.pdf', fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', signature: null, approverNotes: null, leaveId: null },
+                    { id: 101, to: 'Siti Rahmawati', subject: 'Pengajuan Cuti Tahunan - Budi Santoso', date: '2025-11-01', status: 'Pending', content: 'Pengajuan cuti dari tanggal 2025-11-01 s/d 2025-11-03.', sender: 'Sistem (HR Admin)', fileName: null, fileUrl: null, signature: null, approverNotes: null, leaveId: 101 },
+                    { id: 103, to: 'Siti Rahmawati', subject: 'Pengajuan Cuti Melahirkan - Dewi Lestari', date: '2025-10-15', status: 'Pending', content: 'Pengajuan cuti dari tanggal 2025-10-15 s/d 2025-12-15.', sender: 'Sistem (HR Admin)', fileName: null, fileUrl: null, signature: null, approverNotes: null, leaveId: 103 },
+                    { id: 104, to: 'Siti Rahmawati', subject: 'Pengajuan Izin Sakit - Agus Wijaya', date: '2025-10-19', status: 'Pending', content: 'Pengajuan Izin Sakit dari tanggal 2025-10-20 s/d 2025-10-27.', sender: 'Sistem (HR Admin)', fileName: 'surat_sakit_agus_opname.pdf', fileUrl: '#', signature: null, approverNotes: null, leaveId: 104 }
+                ]
+            };
+            
+            const DEDUCTION_RULES = {
+                'Terlambat': { amount: 25000, label: 'Terlambat' },
+                'Izin': { amount: 50000, label: 'Izin' },
+                'Tidak Hadir': { amount: 150000, label: 'Alpha' }
+            };
+
+            const modal = document.getElementById('confirmation-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+            const modalCancelBtn = document.getElementById('modal-cancel-btn');
+            let confirmCallback = null;
+
+            function showConfirmationModal(title, message, onConfirm) {
+                modalTitle.textContent = title;
+                modalMessage.innerHTML = message;
+                confirmCallback = onConfirm;
+                modalConfirmBtn.textContent = 'Ya, Lanjutkan';
+                modalCancelBtn.style.display = 'inline-block';
+                modal.style.display = 'flex';
+                lucide.createIcons();
+            }
+
+            function hideConfirmationModal() {
+                modal.style.display = 'none';
+            }
+
+            modalCancelBtn.addEventListener('click', hideConfirmationModal);
+            modalConfirmBtn.addEventListener('click', () => {
+                if (typeof confirmCallback === 'function') {
+                    confirmCallback();
+                }
+                hideConfirmationModal();
+            });
+
+            const addPermissionModal = document.getElementById('add-permission-modal');
+            const addPermissionForm = document.getElementById('add-permission-form');
+            const permissionCancelBtn = document.getElementById('modal-permission-cancel-btn');
+
+            function showAddPermissionModal() {
+                const employeeSelect = document.getElementById('employee-select-permission');
+                employeeSelect.innerHTML = MOCK_DATA.employees.filter(e => e.active).map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+                addPermissionForm.reset();
+
+                const permissionTypeSelect = document.getElementById('permission-type');
+                const attachmentField = document.getElementById('attachment-field');
+                const attachmentInput = document.getElementById('permission-attachment');
+
+                // Reset field visibility and requirement
+                attachmentField.style.display = 'none';
+                attachmentInput.required = false;
+
+                permissionTypeSelect.addEventListener('change', () => {
+                    if (permissionTypeSelect.value === 'Izin Sakit') {
+                        attachmentField.style.display = 'block';
+                        attachmentInput.required = true;
+                    } else {
+                        attachmentField.style.display = 'none';
+                        attachmentInput.required = false;
+                    }
+                });
+
+                addPermissionModal.style.display = 'flex';
+            }
+            
+            function hideAddPermissionModal() {
+                addPermissionModal.style.display = 'none';
+            }
+
+            permissionCancelBtn.addEventListener('click', hideAddPermissionModal);
+
+            addPermissionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const permissionType = document.getElementById('permission-type').value;
+                const employeeId = parseInt(document.getElementById('employee-select-permission').value);
+                const employee = MOCK_DATA.employees.find(emp => emp.id === employeeId);
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                const notes = document.getElementById('permission-notes').value;
+                const attachmentInput = document.getElementById('permission-attachment');
+                const file = attachmentInput.files[0];
+                const duration = calculateDays(startDate, endDate);
+                
+                if (permissionType === 'Izin Sakit') {
+                    if (!file) {
+                        showConfirmationModal('Peringatan', 'Anda harus melampirkan surat keterangan sakit untuk Izin Sakit.', () => {});
+                        modalConfirmBtn.textContent = 'Tutup';
+                        modalCancelBtn.style.display = 'none';
+                        return;
+                    }
+
+                    // Auto-approve 'Izin Sakit' directly by Admin
+                    const newPermission = {
+                        id: Date.now(),
+                        leaveId: null,
+                        employeeId: employeeId,
+                        type: permissionType,
+                        startDate: startDate,
+                        endDate: endDate,
+                        status: 'Approved',
+                        approver: 'Maria (Manual)',
+                        approverNotes: 'Surat Sakit terlampir.',
+                        attachmentName: file.name,
+                        attachmentUrl: '#'
+                    };
+                    MOCK_DATA.permissions.unshift(newPermission);
+
+                } else {
+                    // For all other leave types (Cuti Tahunan, Cuti Melahirkan, etc.)
+                    const requiresApproval = permissionType === 'Cuti Tahunan' || duration > 5;
+                    
+                    if (requiresApproval) {
+                        // Create a pending permission and a corresponding letter for approval
+                        const leaveId = Date.now();
+                        const newPermission = {
+                            id: leaveId,
+                            leaveId: leaveId,
+                            employeeId: employeeId,
+                            type: permissionType,
+                            startDate: startDate,
+                            endDate: endDate,
+                            status: 'Pending',
+                            approver: 'Siti Rahmawati', // Default approver
+                            approverNotes: null,
+                            attachmentName: null,
+                            attachmentUrl: null,
+                        };
+                        MOCK_DATA.permissions.unshift(newPermission);
+
+                        const newLetter = {
+                            id: leaveId,
+                            leaveId: leaveId,
+                            to: 'Siti Rahmawati',
+                            subject: `Pengajuan ${permissionType} - ${employee.name}`,
+                            date: new Date().toISOString().split('T')[0],
+                            status: 'Pending',
+                            content: `${notes}\n\nPengajuan ${permissionType} dari tanggal ${startDate} s/d ${endDate}.`,
+                            sender: 'Sistem (HR Admin)',
+                            fileName: null,
+                            fileUrl: null,
+                            signature: null,
+                            approverNotes: null,
+                        };
+                        MOCK_DATA.letters.unshift(newLetter);
+                    } else {
+                        // Auto-approve other short leaves
+                        const newPermission = {
+                            id: Date.now(),
+                            leaveId: null,
+                            employeeId: employeeId,
+                            type: permissionType,
+                            startDate: startDate,
+                            endDate: endDate,
+                            status: 'Approved',
+                            approver: 'Maria (Manual)',
+                            approverNotes: 'Disetujui otomatis oleh sistem (durasi <= 5 hari).',
+                            attachmentName: null,
+                            attachmentUrl: null,
+                        };
+                        MOCK_DATA.permissions.unshift(newPermission);
+                    }
+                }
+                
+                hideAddPermissionModal();
+                renderContent('perizinan');
+            });
+
+
+            const addOvertimeModal = document.getElementById('add-overtime-modal');
+            const addOvertimeForm = document.getElementById('add-overtime-form');
+            const overtimeCancelBtn = document.getElementById('modal-overtime-cancel-btn');
+
+            function showAddOvertimeModal() {
+                const employeeSelect = document.getElementById('employee-select-overtime');
+                employeeSelect.innerHTML = MOCK_DATA.employees.filter(e => e.active).map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+                addOvertimeForm.reset();
+                addOvertimeModal.style.display = 'flex';
+            }
+
+            function hideAddOvertimeModal() {
+                addOvertimeModal.style.display = 'none';
+            }
+            
+            overtimeCancelBtn.addEventListener('click', hideAddOvertimeModal);
+
+            addOvertimeForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const hours = parseInt(document.getElementById('overtime-hours').value);
+                const newOvertime = {
+                    id: Date.now(),
+                    employeeId: parseInt(document.getElementById('employee-select-overtime').value),
+                    date: document.getElementById('overtime-date').value,
+                    hours: hours,
+                    status: 'Pending',
+                    cost: hours * 50000, // Simulasi perhitungan biaya
+                };
+                MOCK_DATA.overtime.unshift(newOvertime);
+                hideAddOvertimeModal();
+                renderContent('lembur');
+            });
+            
+            const employeeDetailModal = document.getElementById('employee-detail-modal');
+            const employeeDetailContent = document.getElementById('employee-detail-content');
+            const employeeDetailCloseBtn = document.getElementById('modal-detail-close-btn');
+
+            function showEmployeeDetailModal(employeeId) {
+                const employee = MOCK_DATA.employees.find(e => e.id === employeeId);
+                const salary = MOCK_DATA.baseSalaries.find(s => s.employeeId === employeeId);
+                if (!employee) return;
+
+                const certificatesHtml = employee.certificates && employee.certificates.length > 0 ? `
+                    <ul class="mt-1 space-y-2 text-sm">
+                        ${employee.certificates.map(cert => `
+                            <li>
+                                <a href="${cert.url}" target="_blank" class="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline">
+                                    <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                                    ${cert.name}
+                                </a>
+                            </li>
+                        `).join('')}
+                    </ul>
+                ` : '<p class="text-gray-500 text-sm mt-1">Tidak ada sertifikat.</p>';
+
+                
+                const documentsHtml = employee.documents && employee.documents.length > 0 
+                    ? `<ul class="mt-1 space-y-2 text-sm">
+                        ${employee.documents.map(doc => `
+                            <li>
+                                <a href="${doc.url}" target="_blank" class="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline">
+                                    <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                                    ${doc.name}
+                                </a>
+                            </li>
+                        `).join('')}
+                    </ul>`
+                    : '<p class="text-gray-500 text-sm mt-1">Tidak ada berkas pendukung.</p>';
+
+                const content = `
+                    <div class="flex items-start space-x-6">
+                        <img class="h-24 w-24 rounded-full object-cover ring-4 ring-indigo-200" src="https://placehold.co/96x96/7c3aed/ffffff?text=${employee.name.charAt(0)}" alt="Profile">
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-900">${employee.name}</h3>
+                            <p class="text-indigo-600">${getPositionName(employee.positionId)}</p>
+                            <p class="text-sm text-gray-500">${employee.email}</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 border-t pt-6 modal-body">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                                <div><p class="font-medium text-gray-500">NIK</p><p class="text-gray-900">${employee.nik}</p></div>
+                                <div><p class="font-medium text-gray-500">Status</p><p class="text-gray-900">${employee.active ? 'Aktif' : 'Non-Aktif'}</p></div>
+                                <div><p class="font-medium text-gray-500">Tempat, Tanggal Lahir</p><p class="text-gray-900">${employee.birthPlace}, ${employee.birthDate}</p></div>
+                                <div><p class="font-medium text-gray-500">No. HP</p><p class="text-gray-900">${employee.phone}</p></div>
+                                <div><p class="font-medium text-gray-500">Wilayah Kerja</p><p class="text-gray-900">${employee.workArea}</p></div>
+                                <div><p class="font-medium text-gray-500">Gaji Pokok</p><p class="text-gray-900">${salary ? formatRupiah(salary.salary) : 'N/A'}</p></div>
+                                <div><p class="font-medium text-gray-500">Tanggal Awal Bekerja</p><p class="text-gray-900">${employee.joinDate}</p></div>
+                                <div>
+                                    <p class="font-medium text-gray-500">Tanggal Akhir Bekerja</p>
+                                    <p class="text-gray-900">${employee.endDate || 'Masih Bekerja'}</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <p class="font-medium text-gray-500 text-sm">Sertifikat</p>
+                                ${certificatesHtml}
+                            </div>
+                            <div class="mt-4">
+                                <p class="font-medium text-gray-500 text-sm">Berkas Pendukung</p>
+                                ${documentsHtml}
+                            </div>
+                    </div>
+                `;
+                employeeDetailContent.innerHTML = content;
+                lucide.createIcons();
+                employeeDetailModal.style.display = 'flex';
+            }
+            
+            function hideEmployeeDetailModal() {
+                employeeDetailModal.style.display = 'none';
+            }
+            employeeDetailCloseBtn.addEventListener('click', hideEmployeeDetailModal);
+
+            const employeeFormModal = document.getElementById('employee-form-modal');
+            const employeeForm = document.getElementById('employee-form');
+            const employeeFormCancelBtn = document.getElementById('modal-employee-form-cancel-btn');
+            
+            function showEmployeeFormModal(employeeId = null) {
+                const isEdit = employeeId !== null;
+                const employee = isEdit ? MOCK_DATA.employees.find(e => e.id === employeeId) : {};
+
+                document.getElementById('employee-form-title').textContent = isEdit ? 'Edit Data Karyawan' : 'Tambah Data Karyawan';
+                document.getElementById('employee-id').value = isEdit ? employee.id : '';
+                document.getElementById('employee-name').value = isEdit ? employee.name : '';
+                document.getElementById('employee-nik').value = isEdit ? employee.nik : '';
+                document.getElementById('employee-email').value = isEdit ? employee.email : '';
+                document.getElementById('employee-phone').value = isEdit ? employee.phone : '';
+                document.getElementById('employee-birthPlace').value = isEdit ? employee.birthPlace : '';
+                document.getElementById('employee-birthDate').value = isEdit ? employee.birthDate : '';
+                document.getElementById('employee-workArea').value = isEdit ? employee.workArea : '';
+                document.getElementById('employee-joinDate').value = isEdit ? employee.joinDate : '';
+                document.getElementById('employee-endDate').value = isEdit ? employee.endDate || '' : '';
+                
+                const positionSelect = document.getElementById('employee-position');
+                positionSelect.innerHTML = MOCK_DATA.positions.map(p => `<option value="${p.id}" ${isEdit && p.id === employee.positionId ? 'selected' : ''}>${p.name}</option>`).join('');
+                
+                document.querySelector(`input[name="employee-status"][value="${isEdit ? employee.active : 'true'}"]`).checked = true;
+                
+                const documentList = document.getElementById('document-list-form');
+                let currentFiles = [];
+
+                if (isEdit) {
+                    currentFiles = [...(employee.documents || []), ...(employee.certificates || [])];
+                }
+                
+                function renderFileList() {
+                    documentList.innerHTML = currentFiles.length > 0 
+                        ? currentFiles.map((file, index) => `
+                            <li class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                                <span class="truncate">${file.name}</span>
+                                <button type="button" data-index="${index}" class="remove-file-btn text-red-500 hover:text-red-700">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </li>
+                        `).join('')
+                        : '<li class="text-gray-400">Belum ada berkas.</li>';
+                    
+                    document.querySelectorAll('.remove-file-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const indexToRemove = parseInt(e.currentTarget.dataset.index);
+                            currentFiles.splice(indexToRemove, 1);
+                            renderFileList();
+                        });
+                    });
+
+                    lucide.createIcons();
+                }
+
+                renderFileList();
+
+                const addDocBtn = document.getElementById('add-document-form-btn');
+                const docUploadInput = document.getElementById('document-form-upload-input');
+                
+                const addDocBtnClickHandler = () => docUploadInput.click();
+                addDocBtn.addEventListener('click', addDocBtnClickHandler);
+                
+                const docUploadInputChangeHandler = (e) => {
+                    const files = e.target.files;
+                    if (files) {
+                        for(let i = 0; i < files.length; i++) {
+                            currentFiles.push({
+                                name: files[i].name,
+                                url: URL.createObjectURL(files[i]) // Simulate URL
+                            });
+                        }
+                        renderFileList();
+                    }
+                };
+                docUploadInput.addEventListener('change', docUploadInputChangeHandler);
+
+                employeeForm.__handlers = { addDocBtnClickHandler, docUploadInputChangeHandler };
+                employeeForm.__currentFiles = currentFiles;
+
+                employeeFormModal.style.display = 'flex';
+            }
+
+            function hideEmployeeFormModal() {
+                 const addDocBtn = document.getElementById('add-document-form-btn');
+                const docUploadInput = document.getElementById('document-form-upload-input');
+                if (employeeForm.__handlers) {
+                    addDocBtn.removeEventListener('click', employeeForm.__handlers.addDocBtnClickHandler);
+                    docUploadInput.removeEventListener('change', employeeForm.__handlers.docUploadInputChangeHandler);
+                    delete employeeForm.__handlers;
+                    delete employeeForm.__currentFiles;
+                }
+                employeeFormModal.style.display = 'none';
+            }
+            
+            employeeFormCancelBtn.addEventListener('click', hideEmployeeFormModal);
+
+            employeeForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const employeeId = parseInt(document.getElementById('employee-id').value);
+                const isEdit = !!employeeId;
+
+                const allFiles = employeeForm.__currentFiles || [];
+                
+                const employeeData = {
+                    id: isEdit ? employeeId : Date.now(),
+                    name: document.getElementById('employee-name').value,
+                    nik: document.getElementById('employee-nik').value,
+                    email: document.getElementById('employee-email').value,
+                    phone: document.getElementById('employee-phone').value,
+                    birthPlace: document.getElementById('employee-birthPlace').value,
+                    birthDate: document.getElementById('employee-birthDate').value,
+                    workArea: document.getElementById('employee-workArea').value,
+                    joinDate: document.getElementById('employee-joinDate').value,
+                    endDate: document.getElementById('employee-endDate').value || null,
+                    positionId: parseInt(document.getElementById('employee-position').value),
+                    active: document.querySelector('input[name="employee-status"]:checked').value === 'true',
+                    // This is a simple way to differentiate, in a real app you might have a type property
+                    certificates: allFiles.filter(f => f.name.toLowerCase().includes('sertifikat')),
+                    documents: allFiles.filter(f => !f.name.toLowerCase().includes('sertifikat')),
+                };
+                
+                if(isEdit) {
+                    const index = MOCK_DATA.employees.findIndex(e => e.id === employeeId);
+                    MOCK_DATA.employees[index] = employeeData;
+                } else {
+                    MOCK_DATA.employees.unshift(employeeData);
+                }
+
+                hideEmployeeFormModal();
+                renderContent('karyawan');
+            });
+            
+            const deleteEmployeeModal = document.getElementById('delete-employee-modal');
+            const deleteConfirmInput = document.getElementById('delete-confirmation-input');
+            const deleteConfirmBtn = document.getElementById('modal-delete-confirm-btn');
+            const deleteCancelBtn = document.getElementById('modal-delete-cancel-btn');
+
+            function showDeleteEmployeeModal(employeeId) {
+                const employee = MOCK_DATA.employees.find(e => e.id === employeeId);
+                if (!employee) return;
+                
+                deleteConfirmBtn.dataset.employeeId = employeeId;
+                document.getElementById('delete-modal-message').innerHTML = `Anda akan menghapus data untuk <strong>${employee.name}</strong> secara permanen. Tindakan ini tidak dapat diurungkan.`;
+                
+                deleteConfirmInput.value = '';
+                deleteConfirmBtn.disabled = true;
+                deleteConfirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                deleteEmployeeModal.style.display = 'flex';
+                lucide.createIcons();
+            }
+
+            function hideDeleteEmployeeModal() {
+                deleteEmployeeModal.style.display = 'none';
+            }
+
+            deleteCancelBtn.addEventListener('click', hideDeleteEmployeeModal);
+
+            deleteConfirmInput.addEventListener('input', () => {
+                if (deleteConfirmInput.value === 'Hapus Data Karyawan') {
+                    deleteConfirmBtn.disabled = false;
+                    deleteConfirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    deleteConfirmBtn.disabled = true;
+                    deleteConfirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            });
+
+            deleteConfirmBtn.addEventListener('click', () => {
+                const employeeId = parseInt(deleteConfirmBtn.dataset.employeeId);
+                if (employeeId) {
+                    MOCK_DATA.employees = MOCK_DATA.employees.filter(e => e.id !== employeeId);
+                    hideDeleteEmployeeModal();
+                    renderContent('karyawan');
+                }
+            });
+            
+            // --- Letter Modals ---
+            const addLetterModal = document.getElementById('add-letter-modal');
+            const addLetterForm = document.getElementById('add-letter-form');
+            const letterCancelBtn = document.getElementById('modal-letter-cancel-btn');
+            
+            function showAddLetterModal() {
+                addLetterForm.reset();
+                addLetterModal.style.display = 'flex';
+            }
+
+            function hideAddLetterModal() {
+                addLetterModal.style.display = 'none';
+            }
+
+            letterCancelBtn.addEventListener('click', hideAddLetterModal);
+            
+            addLetterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const fileInput = document.getElementById('letter-file');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    showConfirmationModal('Peringatan', 'Anda harus memilih berkas surat untuk diunggah.', () => {});
+                    modalConfirmBtn.textContent = 'Tutup';
+                    modalCancelBtn.style.display = 'none';
+                    return;
+                }
+
+                const newLetter = {
+                    id: Date.now(),
+                    to: document.getElementById('letter-recipient').value,
+                    subject: document.getElementById('letter-subject').value,
+                    content: document.getElementById('letter-notes').value, 
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'Pending',
+                    sender: 'Maria (HR Manager)',
+                    fileName: file.name,
+                    fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', // Placeholder
+                    signature: null,
+                    leaveId: null,
+                };
+                MOCK_DATA.letters.unshift(newLetter);
+                hideAddLetterModal();
+                renderContent('surat_admin');
+            });
+
+            // --- Letter Detail Modal (For Approver) ---
+            const letterDetailModal = document.getElementById('letter-detail-modal');
+            const letterDetailContent = document.getElementById('letter-detail-content');
+            const letterDetailTitle = document.getElementById('letter-detail-title');
+            const letterDetailCloseBtn = document.getElementById('modal-letter-detail-close-btn');
+            const letterApproveBtn = document.getElementById('modal-letter-approve-btn');
+            const letterDenyBtn = document.getElementById('modal-letter-deny-btn');
+            const approverNotesTextarea = document.getElementById('approver-notes');
+
+            function showLetterDetailModal(letterId) {
+                const letter = MOCK_DATA.letters.find(l => l.id === letterId);
+                if (!letter) return;
+
+                letterDetailTitle.textContent = `Detail Surat: ${letter.subject}`;
+                const fileHtml = letter.fileName ? `
+                    <p class="font-medium text-gray-500 text-sm">Berkas Surat</p>
+                    <a href="${letter.fileUrl}" target="_blank" class="mt-1 flex items-center text-indigo-600 hover:underline">
+                        <i data-lucide="file-text" class="w-4 h-4 mr-2"></i> ${letter.fileName}
+                    </a>` : '';
+
+                letterDetailContent.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><p class="font-medium text-gray-500">Pengirim</p><p class="text-gray-900">${letter.sender}</p></div>
+                        <div><p class="font-medium text-gray-500">Tanggal Pengajuan</p><p class="text-gray-900">${letter.date}</p></div>
+                        <div><p class="font-medium text-gray-500">Tujuan</p><p class="text-gray-900">${letter.to}</p></div>
+                        <div><p class="font-medium text-gray-500">Status</p><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">${letter.status}</span></div>
+                    </div>
+                    <div class="mt-4">
+                       ${fileHtml}
+                    </div>
+                    <div class="mt-4">
+                        <p class="font-medium text-gray-500 text-sm">Catatan Pengirim</p>
+                        <p class="text-gray-700 whitespace-pre-wrap p-3 bg-gray-50 rounded-md mt-1">${letter.content || 'Tidak ada catatan.'}</p>
+                    </div>
+                `;
+
+                approverNotesTextarea.value = ''; // Reset notes
+                letterApproveBtn.dataset.id = letterId;
+                letterDenyBtn.dataset.id = letterId;
+
+                letterDetailModal.style.display = 'flex';
+                lucide.createIcons();
+            }
+
+            function hideLetterDetailModal() {
+                letterDetailModal.style.display = 'none';
+            }
+
+            letterDetailCloseBtn.addEventListener('click', hideLetterDetailModal);
+
+            letterDenyBtn.addEventListener('click', (e) => {
+                const letterId = parseInt(e.currentTarget.dataset.id);
+                const notes = approverNotesTextarea.value;
+                const letter = MOCK_DATA.letters.find(l => l.id === letterId);
+                if (!letter) return;
+
+                showConfirmationModal(
+                    'Tolak Surat',
+                    `Apakah Anda yakin ingin <strong>menolak</strong> surat perihal: <strong>${letter.subject}</strong>?`,
+                    () => {
+                        processLetter(letterId, 'deny', null, notes);
+                        hideLetterDetailModal();
+                    }
+                );
+            });
+
+            letterApproveBtn.addEventListener('click', (e) => {
+                const letterId = parseInt(e.currentTarget.dataset.id);
+                const notes = approverNotesTextarea.value;
+                
+                // Pass the notes to the signature modal via its save button's dataset
+                signatureSaveBtn.dataset.notes = notes;
+
+                hideLetterDetailModal();
+                showSignatureModal(letterId);
+            });
+            // --- End Letter Modals ---
+
+            // --- Signature Modal & Canvas Logic ---
+            const signatureModal = document.getElementById('signature-modal');
+            const canvas = document.getElementById('signature-canvas');
+            const signatureSaveBtn = document.getElementById('signature-save-btn');
+            const signatureClearBtn = document.getElementById('signature-clear-btn');
+            const signatureCancelBtn = document.getElementById('signature-cancel-btn');
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            function resizeCanvas() {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#111827';
+                clearSignature();
+            }
+            
+            function getMousePos(canvasDom, mouseEvent) {
+                const rect = canvasDom.getBoundingClientRect();
+                return {
+                    x: mouseEvent.clientX - rect.left,
+                    y: mouseEvent.clientY - rect.top
+                };
+            }
+
+            function getTouchPos(canvasDom, touchEvent) {
+                const rect = canvasDom.getBoundingClientRect();
+                return {
+                    x: touchEvent.touches[0].clientX - rect.left,
+                    y: touchEvent.touches[0].clientY - rect.top
+                };
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault(); 
+                let pos;
+                if (e.touches) pos = getTouchPos(canvas, e);
+                else pos = getMousePos(canvas, e);
+
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                [lastX, lastY] = [pos.x, pos.y];
+            }
+
+            function startDrawing(e) {
+                isDrawing = true;
+                let pos;
+                if (e.touches) pos = getTouchPos(canvas, e);
+                else pos = getMousePos(canvas, e);
+                [lastX, lastY] = [pos.x, pos.y];
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+            }
+
+            function clearSignature() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function showSignatureModal(letterId) {
+                resizeCanvas();
+                signatureSaveBtn.dataset.letterId = letterId;
+                signatureModal.style.display = 'flex';
+                lucide.createIcons();
+            }
+
+            function hideSignatureModal() {
+                signatureModal.style.display = 'none';
+                clearSignature();
+            }
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDrawing);
+
+            signatureClearBtn.addEventListener('click', clearSignature);
+            signatureCancelBtn.addEventListener('click', hideSignatureModal);
+
+            signatureSaveBtn.addEventListener('click', () => {
+                const letterId = parseInt(signatureSaveBtn.dataset.letterId);
+                const notes = signatureSaveBtn.dataset.notes || '';
+
+                if (canvas.toDataURL() === document.createElement('canvas').toDataURL()) {
+                     showConfirmationModal('Peringatan', 'Tanda tangan tidak boleh kosong.', () => {});
+                     modalConfirmBtn.textContent = 'Tutup';
+                     modalCancelBtn.style.display = 'none';
+                     return;
+                }
+                const signatureDataUrl = canvas.toDataURL('image/png');
+                processLetter(letterId, 'approve', signatureDataUrl, notes); 
+                hideSignatureModal();
+            });
+            // --- End Signature Logic ---
+
+
+            // --- Deduction Detail Modal ---
+            const deductionDetailModal = document.getElementById('deduction-detail-modal');
+            const deductionList = document.getElementById('deduction-list');
+            const deductionCloseBtn = document.getElementById('modal-deduction-close-btn');
+
+            deductionCloseBtn.addEventListener('click', () => {
+                deductionDetailModal.style.display = 'none';
+            });
+
+            function showDeductionDetailModal(employeeId) {
+                const employeeNameEl = document.getElementById('deduction-employee-name');
+                const payrollDetail = MOCK_DATA.payrollRunDetails.find(p => p.id === employeeId);
+                
+                if (!payrollDetail) return;
+
+                employeeNameEl.textContent = `Karyawan: ${payrollDetail.name}`;
+                deductionList.innerHTML = ''; // Clear previous list
+
+                const deductionBreakdown = {};
+                MOCK_DATA.monthlyAttendance.filter(a => a.employeeId === employeeId).forEach(issue => {
+                    const label = DEDUCTION_RULES[issue.status].label;
+                    deductionBreakdown[label] = (deductionBreakdown[label] || 0) + 1;
+                });
+                
+                let total = 0;
+                let listHtml = '';
+                
+                Object.entries(deductionBreakdown).forEach(([label, count]) => {
+                    const rule = Object.values(DEDUCTION_RULES).find(r => r.label === label);
+                    const amount = rule ? rule.amount * count : 0;
+                    total += amount;
+                    listHtml += `
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-200">
+                            <div class="text-sm font-medium text-red-800">${label} (${count}x)</div>
+                            <div class="text-sm font-bold text-red-800">- ${formatRupiah(amount)}</div>
+                        </div>
+                    `;
+                });
+                
+                const cooperativeLoan = MOCK_DATA.cooperativeLoans.find(loan => loan.employeeId === employeeId);
+                if (cooperativeLoan) {
+                    const amount = cooperativeLoan.deductionAmount;
+                    total += amount;
+                    listHtml += `
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="text-sm font-medium text-blue-800">Potongan Koperasi</div>
+                            <div class="text-sm font-bold text-blue-800">- ${formatRupiah(amount)}</div>
+                        </div>
+                    `;
+                }
+
+
+                if (total === 0) {
+                    listHtml = `<p class="text-gray-500">Tidak ada potongan yang tercatat bulan ini.</p>`;
+                } else {
+                    listHtml += `
+                        <div class="flex justify-between items-center pt-3 border-t border-gray-200 mt-3 font-bold">
+                            <div class="text-base text-gray-800">Total Potongan</div>
+                            <div class="text-base text-red-600">- ${formatRupiah(total)}</div>
+                        </div>
+                    `;
+                }
+
+                deductionList.innerHTML = listHtml;
+                deductionDetailModal.style.display = 'flex';
+            }
+
+
+            const getPositionName = (positionId) => MOCK_DATA.positions.find(p => p.id === positionId)?.name || 'N/A';
+            const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+            const calculateDays = (start, end) => {
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                if (isNaN(startDate) || isNaN(endDate)) return 0;
+                const diffTime = Math.abs(endDate - startDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                return diffDays;
+            };
+
+            function getDayName(dateString) {
+                const date = new Date(dateString);
+                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                const correctedDate = new Date(date.getTime() + userTimezoneOffset);
+                const options = { weekday: 'long' };
+                return new Intl.DateTimeFormat('id-ID', options).format(correctedDate);
+            }
+            
+            function initializeCharts() {
+                Chart.getChart('absensiChart')?.destroy();
+                Chart.getChart('compositionChart')?.destroy();
+                const absensiCtx = document.getElementById('absensiChart')?.getContext('2d');
+                if (absensiCtx) {
+                    new Chart(absensiCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+                            datasets: [
+                                { label: 'Tepat Waktu', data: [40, 50, 45, 60, 55, 65, 70, 60, 75, 80, 70, 75], backgroundColor: '#4f46e5', stack: 'Stack 0', borderRadius: 4, },
+                                { label: 'Terlambat', data: [30, 25, 20, 15, 20, 10, 5, 15, 10, 5, 10, 5], backgroundColor: '#fbbf24', stack: 'Stack 0', borderRadius: 4, },
+                                { label: 'Izin/Cuti', data: [10, 5, 15, 10, 5, 5, 15, 10, 5, 5, 10, 10], backgroundColor: '#f87171', stack: 'Stack 0', borderRadius: 4, }
+                            ]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            scales: {
+                                x: { stacked: true, grid: { display: false }, border: { display: false } },
+                                y: { stacked: true, beginAtZero: true, max: 100, ticks: { callback: (value) => value + '%' }, border: { display: false } }
+                            },
+                            plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }
+                        }
+                    });
+                }
+                const compositionCtx = document.getElementById('compositionChart')?.getContext('2d');
+                if (compositionCtx) {
+                     new Chart(compositionCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Perempuan (35%)', 'Laki-laki (65%)'],
+                            datasets: [{ data: [35, 65], backgroundColor: ['#10b981', '#6366f1'], hoverOffset: 4, borderWidth: 0, }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false, cutout: '70%',
+                            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => context.label } } }
+                        }
+                    });
+                }
+            }
+            
+            function updateClock() {
+                const clockTimeEl = document.getElementById('clock-time');
+                const clockDateEl = document.getElementById('clock-date');
+                if (!clockTimeEl || !clockDateEl) return;
+                const now = new Date();
+                const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                clockTimeEl.textContent = now.toLocaleTimeString('id-ID', timeOptions).replace(/\./g, ':');
+                clockDateEl.textContent = now.toLocaleDateString('id-ID', dateOptions);
+            }
+            
+            function renderKaryawanPage() {
+                 const template = `
+                      <div class="bg-white p-6 rounded-xl shadow-md">
+                          <div class="flex justify-between items-center mb-6">
+                              <h2 class="text-2xl font-semibold text-gray-800">Manajemen Data Karyawan</h2>
+                              <button id="add-employee-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center">
+                                  <i data-lucide="user-plus" class="w-5 h-5 mr-2"></i> Tambah Karyawan Baru
+                              </button>
+                          </div>
+                          
+                          <div class="mb-4 flex space-x-4">
+                              <input type="text" id="searchInput" placeholder="Cari nama, NIK, email, atau jabatan..." class="flex-grow p-2 border border-gray-300 rounded-lg">
+                              <select id="statusFilter" class="p-2 border border-gray-300 rounded-lg">
+                                  <option value="all">Semua Status</option>
+                                  <option value="true">Aktif</option>
+                                  <option value="false">Non-Aktif</option>
+                              </select>
+                          </div>
+
+                          <div class="overflow-x-auto rounded-lg border border-gray-200">
+                              <table class="min-w-full divide-y divide-gray-200">
+                                  <thead class="bg-gray-50">
+                                      <tr>
+                                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan</th>
+                                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIK</th>
+                                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jabatan</th>
+                                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl Gabung</th>
+                                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody class="bg-white divide-y divide-gray-200" id="employee-list">
+                                  </tbody>
+                              </table>
+                          </div>
+                      </div>
+                `;
+                contentContainer.innerHTML = template;
+
+                const searchInput = document.getElementById('searchInput');
+                const statusFilter = document.getElementById('statusFilter');
+                
+                const renderTable = () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const status = statusFilter.value;
+                    
+                    const filteredEmployees = MOCK_DATA.employees.filter(emp => {
+                        const positionName = getPositionName(emp.positionId).toLowerCase();
+                        const matchesSearch = emp.name.toLowerCase().includes(searchTerm) ||
+                                              positionName.includes(searchTerm) ||
+                                              emp.nik.toLowerCase().includes(searchTerm) ||
+                                              emp.email.toLowerCase().includes(searchTerm);
+                        const matchesStatus = (status === 'all') || (String(emp.active) === status);
+                        return matchesSearch && matchesStatus;
+                    });
+                    
+                    const employeeList = document.getElementById('employee-list');
+                    if (filteredEmployees.length > 0) {
+                        employeeList.innerHTML = filteredEmployees.map(emp => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">${emp.name}</div>
+                                    <div class="text-sm text-gray-500">${emp.email}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${emp.nik}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getPositionName(emp.positionId)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${emp.joinDate}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${emp.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${emp.active ? 'Aktif' : 'Non-Aktif'}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                    <button class="view-employee-btn text-indigo-600 hover:text-indigo-900" title="Lihat Detail" aria-label="Lihat Detail" data-id="${emp.id}"><i data-lucide="eye" class="w-4 h-4 inline"></i></button>
+                                    <button class="edit-employee-btn text-blue-600 hover:text-blue-900" title="Edit Data" aria-label="Edit Data" data-id="${emp.id}"><i data-lucide="edit-2" class="w-4 h-4 inline"></i></button>
+                                    <button class="delete-employee-btn text-red-600 hover:text-red-900" title="Hapus" aria-label="Hapus" data-id="${emp.id}"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        employeeList.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-500">Data tidak ditemukan.</td></tr>`;
+                    }
+                    attachKaryawanListeners();
+                    lucide.createIcons();
+                };
+
+                searchInput.addEventListener('input', renderTable);
+                statusFilter.addEventListener('change', renderTable);
+                
+                renderTable();
+            }
+            
+            function attachKaryawanListeners() {
+                document.getElementById('add-employee-btn')?.addEventListener('click', () => showEmployeeFormModal());
+
+                document.querySelectorAll('.view-employee-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const employeeId = parseInt(e.currentTarget.dataset.id);
+                        showEmployeeDetailModal(employeeId);
+                    });
+                });
+                 document.querySelectorAll('.edit-employee-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const employeeId = parseInt(e.currentTarget.dataset.id);
+                        showEmployeeFormModal(employeeId);
+                    });
+                });
+                document.querySelectorAll('.delete-employee-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const employeeId = parseInt(e.currentTarget.dataset.id);
+                        showDeleteEmployeeModal(employeeId);
+                    });
+                });
+            }
+            
+            function calculatePayrollDetails() {
+                MOCK_DATA.payrollRunDetails = [];
+                const activeEmployees = MOCK_DATA.employees.filter(e => e.active);
+
+                activeEmployees.forEach(employee => {
+                    const salaryInfo = MOCK_DATA.baseSalaries.find(s => s.employeeId === employee.id);
+                    if (!salaryInfo) return; 
+
+                    const attendanceIssues = MOCK_DATA.monthlyAttendance.filter(a => a.employeeId === employee.id);
+                    let totalDeductions = 0;
+                    
+                    attendanceIssues.forEach(issue => {
+                        const rule = DEDUCTION_RULES[issue.status];
+                        if (rule) {
+                            totalDeductions += rule.amount;
+                        }
+                    });
+
+                    // NEW: Add cooperative loan deduction to payroll calculation
+                    const cooperativeLoan = MOCK_DATA.cooperativeLoans.find(loan => loan.employeeId === employee.id);
+                    if (cooperativeLoan) {
+                        totalDeductions += cooperativeLoan.deductionAmount;
+                    }
+                    
+                    const netSalary = salaryInfo.salary - totalDeductions;
+
+                    MOCK_DATA.payrollRunDetails.push({
+                        id: employee.id, name: employee.name, baseSalary: salaryInfo.salary,
+                        deductions: totalDeductions, overtime: 0, netSalary: netSalary,
+                        status: 'Siap Dibayar',
+                    });
+                });
+            }
+
+            function renderRunPayrollPage() {
+                const payrollData = MOCK_DATA.payrollRunDetails;
+                const allApproved = payrollData.every(p => p.status === 'Sudah Dibayar');
+
+                const template = `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-4 pb-4 border-b">
+                            <div>
+                                <h2 class="text-2xl font-semibold text-gray-800">Jalankan Penggajian - Oktober 2025</h2>
+                                <p class="text-sm text-gray-500">Rincian perhitungan gaji untuk karyawan yang aktif (tidak termasuk lembur).</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="back-to-payroll-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali</button>
+                                <button class="approve-all-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center ${allApproved ? 'opacity-50 cursor-not-allowed' : ''}" ${allApproved ? 'disabled' : ''}>
+                                    <i data-lucide="check-check" class="w-4 h-4 mr-2"></i> Tandai Semua Terbayar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-4 mb-6">
+                           <div class="p-4 bg-blue-50 rounded-lg border border-blue-200"><p class="text-sm text-gray-600">Total Karyawan</p><p class="text-2xl font-bold text-blue-800">${payrollData.length}</p></div>
+                           <div class="p-4 bg-green-50 rounded-lg border border-green-200"><p class="text-sm text-gray-600">Total Gaji Pokok</p><p class="text-2xl font-bold text-green-800" id="total-pokok-card">${formatRupiah(payrollData.reduce((sum, item) => sum + item.baseSalary, 0))}</p></div>
+                           <div class="p-4 bg-red-50 rounded-lg border border-red-200"><p class="text-sm text-gray-600">Total Potongan</p><p class="text-2xl font-bold text-red-800" id="total-potongan-card">${formatRupiah(payrollData.reduce((sum, item) => sum + item.deductions, 0))}</p></div>
+                           <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200"><p class="text-sm text-gray-600">Total Gaji Bersih</p><p class="text-2xl font-bold text-indigo-800" id="total-bersih-card">${formatRupiah(payrollData.reduce((sum, item) => sum + item.netSalary, 0))}</p></div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan (Gaji Pokok)</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Potongan</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Gaji Bersih</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Slip Gaji</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${payrollData.map(p => `
+                                      <tr>
+                                          <td class="px-6 py-4">
+                                              <div class="text-sm font-medium text-gray-900">${p.name}</div>
+                                              <div class="text-xs text-gray-500">Pokok: ${formatRupiah(p.baseSalary)}</div>
+                                          </td>
+                                          <td class="px-6 py-4 text-sm text-red-600 font-medium text-right">
+                                              - ${formatRupiah(p.deductions)}
+                                              ${p.deductions > 0 ? `
+                                                 <button data-id="${p.id}" class="view-deductions-btn text-red-400 hover:text-red-600 ml-1" title="Lihat Rincian Potongan">
+                                                     <i data-lucide="file-warning" class="w-4 h-4 inline-block"></i>
+                                                 </button>
+                                              ` : ''}
+                                          </td>
+                                          <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right" id="net-salary-${p.id}">${formatRupiah(p.netSalary)}</td>
+                                          <td class="px-6 py-4 text-center" id="status-cell-${p.id}"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${p.status === 'Siap Dibayar' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">${p.status}</span></td>
+                                          <td class="px-6 py-4 text-center" id="action-cell-${p.id}">
+                                              ${p.status === 'Siap Dibayar' ? `
+                                                  <button data-id="${p.id}" class="approve-payment-btn bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold py-1 px-3 rounded-full flex items-center justify-center mx-auto">
+                                                      <i data-lucide="check" class="w-4 h-4 mr-1"></i> Tandai Dibayar
+                                                  </button>
+                                              ` : `
+                                                  <span class="text-green-500 flex items-center justify-center">
+                                                      <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                                  </span>
+                                              `}
+                                          </td>
+                                          <td class="px-6 py-4 text-center" id="payslip-cell-${p.id}">
+                                              ${p.status === 'Sudah Dibayar' ? `
+                                                  <button data-id="${p.id}" class="download-payslip-btn text-indigo-600 hover:text-indigo-800 text-xs font-bold py-1 px-3 rounded-full flex items-center justify-center mx-auto bg-indigo-50 hover:bg-indigo-100">
+                                                      <i data-lucide="download" class="w-4 h-4 mr-1"></i> Unduh Slip Gaji
+                                                  </button>
+                                              ` : `
+                                                  <span class="text-xs text-gray-400">-</span>
+                                              `}
+                                          </td>
+                                      </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                contentContainer.innerHTML = template;
+                attachRunPayrollListeners();
+                lucide.createIcons();
+            }
+
+            function handlePayslipDownload(e) {
+                const employeeId = parseInt(e.currentTarget.dataset.id);
+                const employee = MOCK_DATA.payrollRunDetails.find(p => p.id === employeeId);
+                if (employee) {
+                    showConfirmationModal(
+                        'Unduh Slip Gaji',
+                        `Slip gaji untuk <strong>${employee.name}</strong> akan diunduh.`,
+                        () => {
+                            console.log(`Downloading payslip for ${employee.name}`);
+                            // Placeholder for actual download logic
+                        }
+                    );
+                    modalConfirmBtn.textContent = 'OK';
+                    modalCancelBtn.style.display = 'none';
+                }
+            }
+
+            function attachRunPayrollListeners() {
+                document.querySelector('.back-to-payroll-btn')?.addEventListener('click', () => renderContent('penggajian'));
+                
+                document.querySelectorAll('.approve-payment-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const employeeId = parseInt(e.currentTarget.dataset.id);
+                        const employee = MOCK_DATA.payrollRunDetails.find(p => p.id === employeeId);
+                        if (employee) {
+                            showConfirmationModal(
+                                'Konfirmasi Pembayaran',
+                                `Anda akan menandai gaji untuk <strong>${employee.name}</strong> sudah dibayar. Lanjutkan?`,
+                                () => { approvePayment(employeeId); }
+                            );
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.download-payslip-btn').forEach(button => {
+                    button.addEventListener('click', handlePayslipDownload);
+                });
+                
+                document.querySelectorAll('.view-deductions-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const employeeId = parseInt(e.currentTarget.dataset.id);
+                        showDeductionDetailModal(employeeId);
+                    });
+                });
+
+                document.querySelector('.approve-all-btn')?.addEventListener('click', (e) => {
+                    const btn = e.currentTarget;
+                    const employeesToApproveCount = MOCK_DATA.payrollRunDetails.filter(p => p.status === 'Siap Dibayar').length;
+                    
+                    if (employeesToApproveCount === 0) return;
+
+                    showConfirmationModal(
+                        'Konfirmasi Semua Pembayaran',
+                        `Anda akan menandai <strong>${employeesToApproveCount} karyawan</strong> sebagai terbayar. Tindakan ini tidak dapat diurungkan. Lanjutkan?`,
+                        () => {
+                            btn.disabled = true;
+                            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i> Memproses...`;
+                            lucide.createIcons();
+                            
+                            setTimeout(() => { // Simulate API Call
+                                MOCK_DATA.payrollRunDetails.forEach(employee => {
+                                    if (employee.status === 'Siap Dibayar') {
+                                        employee.status = 'Sudah Dibayar';
+                                    }
+                                });
+                                renderRunPayrollPage(); // Re-render the whole page
+                            }, 500);
+                        }
+                    );
+                });
+            }
+
+            function approvePayment(employeeId) {
+                const employee = MOCK_DATA.payrollRunDetails.find(p => p.id === employeeId);
+                if (employee) {
+                    employee.status = 'Sudah Dibayar';
+                    
+                    const statusCell = document.getElementById(`status-cell-${employeeId}`);
+                    if (statusCell) {
+                        statusCell.innerHTML = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Sudah Dibayar</span>`;
+                    }
+
+                    const actionCell = document.getElementById(`action-cell-${employeeId}`);
+                    if (actionCell) {
+                        actionCell.innerHTML = `<span class="text-green-500 flex items-center justify-center"><i data-lucide="check-circle" class="w-5 h-5"></i></span>`;
+                    }
+                    
+                    const payslipCell = document.getElementById(`payslip-cell-${employeeId}`);
+                    if(payslipCell) {
+                        payslipCell.innerHTML = `
+                            <button data-id="${employee.id}" class="download-payslip-btn text-indigo-600 hover:text-indigo-800 text-xs font-bold py-1 px-3 rounded-full flex items-center justify-center mx-auto bg-indigo-50 hover:bg-indigo-100">
+                                <i data-lucide="download" class="w-4 h-4 mr-1"></i> Unduh Slip Gaji
+                            </button>
+                        `;
+                        payslipCell.querySelector('.download-payslip-btn').addEventListener('click', handlePayslipDownload);
+                    }
+
+                    lucide.createIcons();
+                    
+                    if (MOCK_DATA.payrollRunDetails.every(p => p.status === 'Sudah Dibayar')) {
+                        const approveAllBtn = document.querySelector('.approve-all-btn');
+                        if (approveAllBtn) {
+                           approveAllBtn.disabled = true;
+                           approveAllBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        }
+                    }
+                }
+            }
+            
+            function renderAdminSuratPage() {
+                const letters = MOCK_DATA.letters.filter(l => l.sender.includes('Maria') && l.status === 'Pending').sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                const template = `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-semibold text-gray-800">Pengajuan Surat</h2>
+                            <button id="add-letter-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center">
+                                <i data-lucide="upload-cloud" class="w-5 h-5 mr-2"></i> Ajukan Surat Baru (Upload)
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Perihal</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tujuan</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Berkas Surat</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${letters.map(l => `
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${l.date}</td>
+                                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${l.subject}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${l.to}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 truncate max-w-xs">
+                                                <a href="${l.fileUrl}" target="_blank" class="flex items-center hover:underline" title="${l.fileName}">
+                                                    <i data-lucide="file-text" class="w-4 h-4 mr-1"></i> ${l.fileName}
+                                                </a>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">${l.status}</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
+                                                <button data-id="${l.id}" class="view-letter-btn text-indigo-600 hover:text-indigo-900" title="Lihat Detail & Catatan"><i data-lucide="eye" class="w-4 h-4 inline"></i></button>
+                                                <button data-id="${l.id}" class="delete-letter-btn text-red-600 hover:text-red-900" title="Batalkan Pengajuan"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${letters.length === 0 ? '<p class="text-center py-8 text-gray-500">Tidak ada pengajuan surat yang menunggu konfirmasi.</p>' : ''}
+                        </div>
+                    </div>
+                `;
+                return template;
+            }
+
+            function renderAdminSuratHistoryPage() {
+                 // Admin: Halaman Histori (Surat yang sudah Approved atau Denied)
+                const letters = MOCK_DATA.letters.filter(l => l.sender.includes('Maria') && l.status !== 'Pending').sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                const template = `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-semibold text-gray-800">Histori Pengiriman Surat</h2>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Kirim</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Perihal</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tujuan</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Berkas Surat</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${letters.map(l => `
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${l.date}</td>
+                                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${l.subject}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${l.to}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 truncate max-w-xs">
+                                                <a href="${l.fileUrl}" target="_blank" class="flex items-center hover:underline" title="${l.fileName}">
+                                                    <i data-lucide="file-text" class="w-4 h-4 mr-1"></i> ${l.fileName}
+                                                </a>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${l.status.includes('Approved') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${l.status}</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
+                                                <button data-id="${l.id}" class="view-letter-btn text-indigo-600 hover:text-indigo-900" title="Lihat Detail & Catatan"><i data-lucide="eye" class="w-4 h-4 inline"></i></button>
+                                                <button onclick="window.open('${l.fileUrl}', '_blank')" class="text-teal-600 hover:text-teal-800" title="Unduh Berkas"><i data-lucide="download" class="w-4 h-4 inline"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${letters.length === 0 ? '<p class="text-center py-8 text-gray-500">Tidak ada histori surat yang telah selesai.</p>' : ''}
+                        </div>
+                    </div>
+                `;
+                return template;
+            }
+
+            function renderSuratAtasanPage() {
+                const lettersForApproval = MOCK_DATA.letters.filter(l => (l.to === 'Siti Rahmawati' || l.to === 'CEO') && l.status === 'Pending').sort((a, b) => new Date(b.date) - new Date(a.date));
+                const pendingCount = lettersForApproval.length;
+                return `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-semibold text-gray-800">Surat Masuk untuk Persetujuan</h2>
+                            <span class="px-3 py-1 text-sm font-bold rounded-full ${pendingCount > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">${pendingCount} Pending</span>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Kirim</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pengirim</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Perihal</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${lettersForApproval.map(l => `
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${l.date}</td>
+                                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${l.sender}</td>
+                                            <td class="px-6 py-4 text-sm text-gray-500">${l.subject}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">${l.status}</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-center text-sm font-medium" id="approval-action-${l.id}">
+                                                <button data-id="${l.id}" class="view-letter-detail-btn bg-indigo-100 text-indigo-800 hover:bg-indigo-200 px-3 py-1 rounded-full text-xs font-bold flex items-center justify-center mx-auto">
+                                                    <i data-lucide="eye" class="w-4 h-4 mr-1"></i> Lihat Detail
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${pendingCount === 0 ? '<p class="text-center py-8 text-gray-500">Tidak ada surat masuk yang menunggu persetujuan.</p>' : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderSuratAtasanHistoryPage() {
+                 // Atasan: Halaman Histori (Surat yang ditujukan ke atasan dan sudah Approved atau Denied)
+                const lettersForApproval = MOCK_DATA.letters.filter(l => (l.to === 'Siti Rahmawati' || l.to === 'CEO') && l.status !== 'Pending').sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                const template = `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-semibold text-gray-800">Histori Persetujuan Atasan</h2>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Proses</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pengirim</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Perihal</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Berkas Surat</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tujuan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${lettersForApproval.map(l => `
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${l.date}</td>
+                                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${l.sender}</td>
+                                            <td class="px-6 py-4 text-sm text-gray-500">${l.subject}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 truncate max-w-xs">
+                                                <a href="${l.fileUrl}" target="_blank" class="flex items-center hover:underline" title="${l.fileName}">
+                                                    <i data-lucide="file-text" class="w-4 h-4 mr-1"></i> ${l.fileName || '-'}
+                                                </a>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${l.status.includes('Approved') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${l.status}</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-center text-sm font-medium space-x-2">${l.to}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                             ${lettersForApproval.length === 0 ? '<p class="text-center py-8 text-gray-500">Tidak ada histori persetujuan surat yang telah selesai.</p>' : ''}
+                        </div>
+                    </div>
+                `;
+                return template;
+            }
+            
+            function attachLetterListeners() {
+                // For general "view" button (used in history pages)
+                document.querySelectorAll('.view-letter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const letterId = parseInt(e.currentTarget.dataset.id);
+                        const letter = MOCK_DATA.letters.find(l => l.id === letterId);
+                        if (letter) {
+                            showConfirmationModal(
+                                `Detail Surat: ${letter.subject}`,
+                                `<p class="text-left mb-3"><strong>Pengirim:</strong> ${letter.sender} | <strong>Tujuan:</strong> ${letter.to} | <strong>Status:</strong> <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${letter.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : (letter.status.includes('Approved') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}">${letter.status}</span></p>
+                                <p class="text-left mb-3"><strong>Berkas:</strong> <a href="${letter.fileUrl}" target="_blank" class="text-indigo-600 hover:underline flex items-center"><i data-lucide="download" class="w-4 h-4 mr-1"></i> ${letter.fileName || 'N/A'}</a></p>
+                                <p class="text-left text-gray-700 whitespace-pre-wrap"><strong>Catatan Pengirim:</strong> ${letter.content || 'Tidak ada catatan.'}</p>
+                                <p class="text-left text-gray-700 whitespace-pre-wrap mt-2"><strong>Catatan Atasan:</strong> ${letter.approverNotes || 'Tidak ada catatan.'}</p>`,
+                                () => {}
+                            );
+                            modalConfirmBtn.textContent = 'Tutup';
+                            modalCancelBtn.style.display = 'none';
+                            lucide.createIcons();
+                        }
+                    });
+                });
+                
+                // For approver's "Lihat Detail" button
+                 document.querySelectorAll('.view-letter-detail-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const letterId = parseInt(e.currentTarget.dataset.id);
+                        showLetterDetailModal(letterId);
+                    });
+                });
+
+                document.querySelectorAll('.delete-letter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const letterId = parseInt(e.currentTarget.dataset.id);
+                        const letter = MOCK_DATA.letters.find(l => l.id === letterId);
+                        if (!letter || letter.status !== 'Pending') return;
+
+                        showConfirmationModal(
+                            `Batalkan Pengajuan Surat`,
+                            `Anda akan membatalkan pengajuan surat perihal: <strong>${letter.subject}</strong>. Lanjutkan?`,
+                            () => {
+                                MOCK_DATA.letters = MOCK_DATA.letters.filter(l => l.id !== letterId);
+                                renderContent('surat_admin');
+                            }
+                        );
+                    });
+                });
+            }
+
+            function processLetter(letterId, action, signatureData = null, notes = '') {
+                const letter = MOCK_DATA.letters.find(l => l.id === letterId);
+                if (!letter) return;
+                
+                letter.approverNotes = notes;
+
+                if (action === 'approve') {
+                    letter.status = 'Approved & Signed';
+                    letter.signature = signatureData;
+                } else {
+                    letter.status = 'Denied';
+                }
+
+                // Sync status with permission module if it's a leave request
+                if (letter.leaveId) {
+                    const permission = MOCK_DATA.permissions.find(p => p.leaveId === letter.leaveId);
+                    if(permission) {
+                        permission.status = letter.status.startsWith('Approved') ? 'Approved' : 'Denied';
+                        permission.approverNotes = letter.approverNotes;
+                    }
+                }
+                
+                renderContent('surat_atasan');
+            }
+
+            // --- LEMBUR PAYMENT LOGIC ---
+            function calculateLemburDetails() {
+                MOCK_DATA.lemburRunDetails = [];
+                const overtimeToPay = MOCK_DATA.overtime.filter(o => o.status === 'Approved' && o.date.startsWith('2025-10'));
+
+                overtimeToPay.forEach(ot => {
+                    const employee = MOCK_DATA.employees.find(e => e.id === ot.employeeId);
+                    const startTimeHour = parseInt(ot.startTime.split(':')[0]);
+                    const rate = startTimeHour < 19 ? 20000 : 30000;
+                    const cost = ot.hours * rate;
+                    const dayName = getDayName(ot.date);
+
+                    MOCK_DATA.lemburRunDetails.push({
+                        ...ot,
+                        employeeName: employee ? employee.name : 'Unknown',
+                        cost: cost,
+                        dayName: dayName,
+                    });
+                });
+            }
+
+            function renderLemburPaymentPage() {
+                const lemburData = MOCK_DATA.lemburRunDetails;
+                
+                const groupedByEmployee = lemburData.reduce((acc, entry) => {
+                    if (!acc[entry.employeeId]) {
+                        acc[entry.employeeId] = {
+                            employeeId: entry.employeeId,
+                            employeeName: entry.employeeName,
+                            sessions: [],
+                            totalHours: 0,
+                            totalCost: 0,
+                        };
+                    }
+                    acc[entry.employeeId].sessions.push(entry);
+                    acc[entry.employeeId].totalHours += entry.hours;
+                    acc[entry.employeeId].totalCost += entry.cost;
+                    return acc;
+                }, {});
+
+                const groupedLemburArray = Object.values(groupedByEmployee);
+                const allPaid = lemburData.every(p => p.paymentStatus === 'Paid');
+                const totalEmployees = groupedLemburArray.length;
+                const totalCost = lemburData.reduce((sum, item) => sum + item.cost, 0);
+
+                return `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-4 pb-4 border-b">
+                            <div>
+                                <h2 class="text-2xl font-semibold text-gray-800">Pembayaran Lembur - Oktober 2025</h2>
+                                <p class="text-sm text-gray-500">Rincian pembayaran lembur terpisah dari gaji pokok.</p>
+                            </div>
+                            <button class="approve-all-lembur-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center ${allPaid ? 'opacity-50 cursor-not-allowed' : ''}" ${allPaid ? 'disabled' : ''}>
+                                <i data-lucide="check-check" class="w-4 h-4 mr-2"></i> Tandai Semua Terbayar
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                           <div class="p-4 bg-blue-50 rounded-lg border border-blue-200"><p class="text-sm text-gray-600">Total Karyawan Lembur</p><p class="text-2xl font-bold text-blue-800">${totalEmployees}</p></div>
+                           <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200"><p class="text-sm text-gray-600">Total Biaya Lembur Bulan Ini</p><p class="text-2xl font-bold text-indigo-800">${formatRupiah(totalCost)}</p></div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rincian Lembur</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Jam</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Pembayaran</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${groupedLemburArray.length === 0 ? `<tr><td colspan="6" class="text-center py-8 text-gray-500">Tidak ada data lembur untuk bulan ini.</td></tr>` : ''}
+                                    ${groupedLemburArray.map(employeeLembur => {
+                                        const employeeAllPaid = employeeLembur.sessions.every(s => s.paymentStatus === 'Paid');
+                                        return `
+                                          <tr>
+                                              <td class="px-6 py-4 text-sm font-medium text-gray-900 align-top">${employeeLembur.employeeName}</td>
+                                              <td class="px-6 py-4 text-sm text-gray-500 align-top">
+                                                  <ul class="space-y-1">
+                                                      ${employeeLembur.sessions.map(s => `
+                                                          <li class="flex justify-between items-center text-xs">
+                                                              <span>${s.dayName}, ${s.date} (${s.startTime}-${s.endTime})</span>
+                                                              <span class="font-mono p-1 bg-gray-100 rounded">${s.hours} jam</span>
+                                                          </li>
+                                                      `).join('')}
+                                                  </ul>
+                                              </td>
+                                              <td class="px-6 py-4 text-sm text-gray-900 font-semibold text-center align-top">${employeeLembur.totalHours} jam</td>
+                                              <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right align-top">${formatRupiah(employeeLembur.totalCost)}</td>
+                                              <td class="px-6 py-4 text-center align-top">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${!employeeAllPaid ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                                                    ${!employeeAllPaid ? 'Belum Dibayar' : 'Sudah Dibayar'}
+                                                </span>
+                                              </td>
+                                              <td class="px-6 py-4 text-center align-top">
+                                                ${!employeeAllPaid ? `
+                                                    <button data-id="${employeeLembur.employeeId}" class="approve-lembur-btn bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold py-1 px-3 rounded-full flex items-center justify-center mx-auto">
+                                                        <i data-lucide="check" class="w-4 h-4 mr-1"></i> Tandai Dibayar
+                                                    </button>
+                                                ` : `
+                                                    <span class="text-green-500 flex items-center justify-center">
+                                                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                                    </span>
+                                                `}
+                                              </td>
+                                          </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+            }
+
+            function approveLemburPayment(employeeId, approveAll = false) {
+                 // Find all overtime entries for this employee for the current month and mark as paid
+                MOCK_DATA.overtime.forEach(ot => {
+                    if (ot.employeeId === employeeId && ot.date.startsWith('2025-10')) {
+                        ot.paymentStatus = 'Paid';
+                    }
+                });
+
+                if (!approveAll) {
+                   renderContent('lembur');
+                }
+            }
+
+            function attachLemburPaymentListeners() {
+                document.querySelectorAll('.approve-lembur-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const employeeId = parseInt(e.currentTarget.dataset.id);
+                        const employeeData = MOCK_DATA.employees.find(emp => emp.id === employeeId);
+                        if(employeeData) {
+                            showConfirmationModal('Konfirmasi Pembayaran Lembur', `Anda akan menandai semua lembur untuk <strong>${employeeData.name}</strong> pada bulan ini sudah dibayar. Lanjutkan?`, () => {
+                                approveLemburPayment(employeeId);
+                            });
+                        }
+                    });
+                });
+
+                 document.querySelector('.approve-all-lembur-btn')?.addEventListener('click', () => {
+                    const employeeIdsToPay = [...new Set(MOCK_DATA.lemburRunDetails
+                        .filter(l => l.paymentStatus === 'Pending')
+                        .map(l => l.employeeId))];
+
+                    if (employeeIdsToPay.length > 0) {
+                        showConfirmationModal('Konfirmasi Semua Pembayaran Lembur', `Anda akan menandai lembur untuk <strong>${employeeIdsToPay.length} karyawan</strong> sebagai terbayar. Lanjutkan?`, () => {
+                            employeeIdsToPay.forEach(employeeId => approveLemburPayment(employeeId, true));
+                            renderContent('lembur');
+                        });
+                    }
+                });
+            }
+
+
+            const PAGE_TEMPLATES = {
+                dashboard: `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-indigo-500"><div class="text-sm font-medium text-gray-500">Total Karyawan</div><div class="text-3xl font-bold text-gray-900 mt-1">856 <span class="text-sm text-green-500 font-normal ml-2">↑ 1.0%</span></div><div class="text-xs text-gray-400 mt-2">Pegawai Aktif</div></div>
+                        <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-yellow-500"><div class="text-sm font-medium text-gray-500">Izin Menunggu Persetujuan</div><div class="text-3xl font-bold text-gray-900 mt-1">12 <span class="text-sm text-red-500 font-normal ml-2">↓ 5.0%</span></div><div class="text-xs text-gray-400 mt-2">Perizinan Multi-Level</div></div>
+                        <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-teal-500"><div class="text-sm font-medium text-gray-500">Total Jam Lembur (Bulan)</div><div class="text-3xl font-bold text-gray-900 mt-1">342 Jam <span class="text-sm text-green-500 font-normal ml-2">↑ 2.2%</span></div><div class="text-xs text-gray-400 mt-2">Memerlukan Persetujuan</div></div>
+                        <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-red-500"><div class="text-sm font-medium text-gray-500">Karyawan Keluar (Q3)</div><div class="text-3xl font-bold text-gray-900 mt-1">17 <span class="text-sm text-red-500 font-normal ml-2">↑ 7.0%</span></div><div class="text-xs text-gray-400 mt-2">Rasio Turn-Over</div></div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold text-gray-800 mb-4">Statistik Absensi Bulanan</h2><div class="h-80"><canvas id="absensiChart"></canvas></div></div>
+                        <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold text-gray-800 mb-4">Komposisi Karyawan</h2><div class="flex justify-center items-center h-56 relative"><canvas id="compositionChart"></canvas><div class="absolute inset-0 flex flex-col justify-center items-center"><div class="text-3xl font-bold text-gray-800">65%</div><div class="text-sm text-gray-500">Laki-laki</div></div></div><div class="mt-4 flex justify-around text-center"><div><span class="w-3 h-3 inline-block rounded-full bg-indigo-500 mr-1"></span> Laki-laki <span class="font-semibold block text-lg">65%</span></div><div><span class="w-3 h-3 inline-block rounded-full bg-teal-500 mr-1"></span> Perempuan <span class="font-semibold block text-lg">35%</span></div></div></div>
+                    </div>`,
+                jabatan: `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-semibold text-gray-800">Manajemen Jabatan & Hak Akses</h2>
+                            <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center"><i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Jabatan</button>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Jabatan</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level Persetujuan</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ringkasan Akses</th></tr></thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${MOCK_DATA.positions.map(pos => `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${pos.name}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${pos.level}</td><td class="px-6 py-4 text-sm text-gray-500 max-w-sm overflow-hidden text-ellipsis">${pos.access.join(', ')}</td></tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`,
+                absensi: () => `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-semibold text-gray-800">Rekap Absensi Harian</h2><div class="flex items-center space-x-2"><input type="date" value="2025-10-13" class="p-2 border border-gray-300 rounded-lg"><button class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center"><i data-lucide="upload" class="w-5 h-5 mr-2"></i> Import Excel</button><button class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center"><i data-lucide="download" class="w-5 h-5 mr-2"></i> Ekspor</button></div></div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jabatan</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jam Masuk</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jam Keluar</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${MOCK_DATA.attendance.map(att => {
+                                        const employee = MOCK_DATA.employees.find(e => e.id === att.employeeId);
+                                        return `
+                                        <tr>
+                                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${employee?.name || ''}</td>
+                                            <td class="px-6 py-4 text-sm text-gray-500">${getPositionName(employee?.positionId)}</td>
+                                            <td class="px-6 py-4 text-sm text-gray-500">${att.checkIn}</td>
+                                            <td class="px-6 py-4 text-sm text-gray-500">${att.checkOut}</td>
+                                            <td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${att.status === 'Tepat Waktu' ? 'bg-green-100 text-green-800' : (att.status === 'Terlambat' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800')}">${att.status}</span></td>
+                                            <td class="px-6 py-4 text-center space-x-2" id="action-absensi-${att.id}">
+                                                ${att.verificationStatus === 'Pending' ? `
+                                                    <button data-id="${att.id}" class="approve-absensi-btn text-green-600 hover:text-green-800" title="Approve"><i data-lucide="check-circle" class="w-5 h-5"></i></button>
+                                                    <button data-id="${att.id}" class="deny-absensi-btn text-red-600 hover:text-red-800" title="Deny"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
+                                                ` : att.verificationStatus === 'Approved' ? `
+                                                    <span class="text-green-600 flex items-center justify-center text-xs"><i data-lucide="check" class="w-4 h-4 mr-1"></i> Terverifikasi</span>
+                                                ` : `
+                                                    <span class="text-red-600 flex items-center justify-center text-xs"><i data-lucide="x" class="w-4 h-4 mr-1"></i> Ditolak</span>
+                                                    <button data-id="${att.id}" class="edit-absensi-btn text-blue-600 hover:text-blue-800" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                                `}
+                                            </td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`,
+                perizinan: () => `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-semibold text-gray-800">Manajemen Perizinan Karyawan</h2>
+                             <button id="add-permission-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center">
+                                 <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Izin Baru
+                             </button>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                             <table class="min-w-full divide-y divide-gray-200">
+                                 <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Karyawan</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jabatan</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis Izin</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Izin</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Durasi</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead>
+                                 <tbody class="bg-white divide-y divide-gray-200">
+                                     ${MOCK_DATA.permissions.map(perm => {
+                                         const employee = MOCK_DATA.employees.find(e => e.id === perm.employeeId);
+                                         const duration = calculateDays(perm.startDate, perm.endDate);
+                                         return `<tr>
+                                             <td class="px-6 py-4 text-sm font-medium text-gray-900">${employee?.name || 'N/A'}</td>
+                                             <td class="px-6 py-4 text-sm text-gray-500">${getPositionName(employee?.positionId)}</td>
+                                             <td class="px-6 py-4 text-sm text-gray-500">
+                                                ${perm.type}
+                                                ${perm.attachmentName ? `
+                                                    <a href="${perm.attachmentUrl || '#'}" target="_blank" title="${perm.attachmentName}" class="ml-2 text-indigo-500 hover:text-indigo-700">
+                                                        <i data-lucide="paperclip" class="w-4 h-4 inline-block"></i>
+                                                    </a>
+                                                ` : ''}
+                                             </td>
+                                             <td class="px-6 py-4 text-sm text-gray-500">${perm.startDate} s/d ${perm.endDate}</td>
+                                             <td class="px-6 py-4 text-sm text-gray-500 text-center">${duration} hari</td>
+                                             <td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${perm.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : (perm.status.includes('Approved') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}">${perm.status}</span></td>
+                                             <td class="px-6 py-4 text-center space-x-2">${perm.status === 'Pending' ? `<span class="text-xs text-gray-500">Menunggu Atasan</span>` : `<span class="text-xs text-gray-400">Selesai</span>`}</td>
+                                         </tr>`
+                                     }).join('')}
+                                 </tbody>
+                             </table>
+                        </div>
+                    </div>`,
+                lembur: () => {
+                    calculateLemburDetails();
+                    return renderLemburPaymentPage();
+                },
+                penggajian: `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-semibold text-gray-800">Proses Penggajian (Payroll)</h2><button class="run-payroll-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center"><i data-lucide="play" class="w-5 h-5 mr-2"></i> Jalankan Penggajian Bulan Ini</button></div>
+                        <p class="mb-4 text-sm text-gray-600">Penggajian dihitung otomatis berdasarkan absensi dan potongan (tidak termasuk lembur).</p>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200">
+                             <table class="min-w-full divide-y divide-gray-200">
+                                 <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Proses</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Dibayarkan</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead>
+                                 <tbody class="bg-white divide-y divide-gray-200">
+                                     ${MOCK_DATA.payroll.map(pay => `<tr><td class="px-6 py-4 text-sm font-medium text-gray-900">${pay.period}</td><td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${pay.status === 'Completed' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">${pay.status}</span></td><td class="px-6 py-4 text-sm text-gray-500">${pay.runDate}</td><td class="px-6 py-4 text-sm font-semibold text-green-700">${pay.totalPaid}</td><td class="px-6 py-4 text-right"><button class="text-indigo-600 hover:text-indigo-900" title="Lihat Rincian"><i data-lucide="file-text" class="w-5 h-5"></i></button></td></tr>`).join('')}
+                                 </tbody>
+                             </table>
+                        </div>
+                    </div>`,
+                profile: `
+                    <div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Profil Saya</h2>
+                        <div class="flex items-center space-x-6">
+                            <img class="h-24 w-24 rounded-full object-cover ring-4 ring-indigo-200" src="https://placehold.co/96x96/7c3aed/ffffff?text=M" alt="Profile">
+                            <div><p class="text-2xl font-bold text-gray-900">Maria</p><p class="text-indigo-600">HR Manager</p></div>
+                        </div>
+                        <div class="mt-8 border-t pt-6 space-y-4">
+                            <div><label class="block text-sm font-medium text-gray-500">Alamat Email</label><p class="text-gray-900">maria.hr@example.com</p></div>
+                            <div><label class="block text-sm font-medium text-gray-500">Jabatan</label><p class="text-gray-900">HR Manager (Level 4 Persetujuan)</p></div>
+                            <button class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center justify-center"><i data-lucide="edit" class="w-4 h-4 mr-2"></i> Edit Profil</button>
+                        </div>
+                    </div>`,
+                settings: `
+                    <div class="bg-white p-8 rounded-xl shadow-md max-w-2xl mx-auto">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6 border-b pb-4">Pengaturan Aplikasi</h2>
+                        <div class="space-y-8">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Keamanan</h3>
+                                <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border">
+                                    <div><p class="font-medium">Password</p><p class="text-sm text-gray-500">Ubah password Anda secara berkala.</p></div>
+                                    <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg text-sm">Ubah Password</button>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Notifikasi</h3>
+                                <div class="space-y-3 p-4 bg-gray-50 rounded-lg border">
+                                    <label class="flex items-center justify-between"><span class="text-gray-700">Notifikasi Real-time di Aplikasi</span><input type="checkbox" checked class="form-checkbox text-indigo-600 h-5 w-5 rounded focus:ring-0"></label>
+                                    <label class="flex items-center justify-between"><span class="text-gray-700">Notifikasi Email untuk Persetujuan</span><input type="checkbox" class="form-checkbox text-indigo-600 h-5 w-5 rounded focus:ring-0"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`,
+                surat_admin: renderAdminSuratPage,
+                surat_admin_history: renderAdminSuratHistoryPage, 
+                surat_atasan: renderSuratAtasanPage,
+                surat_atasan_history: renderSuratAtasanHistoryPage
+            };
+
+            // --- Fungsi Utama Navigasi dan Rendering ---
+            function renderContent(page) {
+                contentContainer.style.opacity = 0;
+                setTimeout(() => {
+                    const titleMap = {
+                        dashboard: 'Dashboard', karyawan: 'Manajemen Karyawan', jabatan: 'Jabatan & Akses',
+                        absensi: 'Absensi', perizinan: 'Perizinan', lembur: 'Pembayaran Lembur',
+                        penggajian: 'Penggajian', profile: 'Profil Pengguna', settings: 'Pengaturan',
+                        runPayroll: 'Jalankan Penggajian', 
+                        surat_admin: 'Pengajuan Surat (Admin)', 
+                        surat_admin_history: 'Histori Pengiriman Surat (Admin)',
+                        surat_atasan: 'Surat Masuk (Atasan)',
+                        surat_atasan_history: 'Histori Persetujuan (Atasan)'
+                    };
+                    pageTitle.textContent = titleMap[page] || 'Halaman Tidak Ditemukan';
+
+                    if (page === 'karyawan') {
+                        renderKaryawanPage();
+                    } else if (page === 'runPayroll') {
+                        calculatePayrollDetails();
+                        renderRunPayrollPage();
+                    } else {
+                        const templateFunctionOrString = PAGE_TEMPLATES[page];
+                        const htmlContent = (typeof templateFunctionOrString === 'function') 
+                                            ? templateFunctionOrString() 
+                                            : templateFunctionOrString;
+                        contentContainer.innerHTML = htmlContent || '<div class="text-center py-10 text-gray-500">Halaman tidak ditemukan.</div>';
+                    }
+                    
+                    if (page === 'penggajian') {
+                        document.querySelector('.run-payroll-btn')?.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            currentPage = 'runPayroll';
+                            renderContent('runPayroll');
+                        });
+                    } else if (page === 'perizinan') {
+                        document.getElementById('add-permission-btn')?.addEventListener('click', showAddPermissionModal);
+                    } else if (page === 'lembur') {
+                        attachLemburPaymentListeners();
+                    }
+                    else if (['surat_admin', 'surat_admin_history', 'surat_atasan', 'surat_atasan_history'].includes(page)) {
+                        if (page === 'surat_admin') {
+                            document.getElementById('add-letter-btn')?.addEventListener('click', showAddLetterModal);
+                        }
+                        attachLetterListeners();
+                    } else if (page === 'absensi') {
+                        attachAbsensiListeners();
+                    }
+
+                    lucide.createIcons();
+                    if (page === 'dashboard') initializeCharts();
+                    
+                    document.querySelectorAll('.sidebar-item').forEach(item => {
+                        item.classList.remove('active');
+                         if (item.id === 'surat-menu-toggle' && !['surat_admin', 'surat_admin_history', 'surat_atasan', 'surat_atasan_history'].includes(page)) {
+                            item.querySelector('.chevron-icon').style.transform = '';
+                        }
+                    });
+                    
+                    const activeItem = document.querySelector(`.sidebar-item[data-page="${page}"]`);
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                        const parentSubmenu = activeItem.closest('.submenu');
+                        if (parentSubmenu) {
+                            const toggle = document.getElementById('surat-menu-toggle');
+                            toggle.classList.add('active');
+                            parentSubmenu.classList.add('open');
+                        } else {
+                            const suratSubmenu = document.getElementById('surat-submenu');
+                            if(suratSubmenu && activeItem.id !== 'surat-menu-toggle' && suratSubmenu.classList.contains('open')) {
+                                document.getElementById('surat-menu-toggle').classList.remove('active');
+                                document.getElementById('surat-menu-toggle').querySelector('.chevron-icon').style.transform = '';
+                                suratSubmenu.classList.remove('open');
+                            }
+                        }
+                    }
+                    
+                    contentContainer.style.opacity = 1;
+                }, 150);
+            }
+            
+            function attachAbsensiListeners() {
+                document.querySelectorAll('.approve-absensi-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const attendanceId = parseInt(e.currentTarget.dataset.id);
+                        const attendance = MOCK_DATA.attendance.find(a => a.id === attendanceId);
+                        if(attendance) {
+                            attendance.verificationStatus = 'Approved';
+                            renderContent('absensi');
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.deny-absensi-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const attendanceId = parseInt(e.currentTarget.dataset.id);
+                        const attendance = MOCK_DATA.attendance.find(a => a.id === attendanceId);
+                        if(attendance) {
+                            showConfirmationModal('Tolak Absensi', `Anda akan menolak data absensi untuk <strong>${MOCK_DATA.employees.find(e => e.id === attendance.employeeId)?.name}</strong>. Lanjutkan?`, () => {
+                                attendance.verificationStatus = 'Denied';
+                                renderContent('absensi');
+                            });
+                        }
+                    });
+                });
+            }
+
+            // --- Setup Event Listeners ---
+            document.querySelectorAll('.sidebar .sidebar-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    if(item.id === 'surat-menu-toggle') {
+                        const submenu = document.getElementById('surat-submenu');
+                        submenu.classList.toggle('open');
+                        item.classList.toggle('active'); // Toggle active for chevron rotation
+                        return;
+                    }
+
+                    const page = item.getAttribute('data-page');
+
+                    if (page === 'logout') {
+                        showConfirmationModal(
+                            'Konfirmasi Logout',
+                            'Apakah Anda yakin ingin keluar dari sesi ini?',
+                            () => {
+                                console.log('Logging out...');
+                                // GANTI URL DI BAWAH INI DENGAN HALAMAN LOGIN KUSTOM ANDA
+                                window.location.href = 'URL_HALAMAN_LOGIN_ANDA.html'; 
+                            }
+                        );
+                    } else if (page && page !== currentPage) {
+                        currentPage = page;
+                        renderContent(currentPage);
+                    }
+                });
+            });
+
+            // --- Initial Load ---
+            lucide.createIcons();
+            updateClock();
+            setInterval(updateClock, 1000);
+            renderContent(currentPage);
+        });
+    </script>
+</body>
+</html>
+
